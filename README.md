@@ -14,6 +14,7 @@ cluster pays, tumbles, Multis, FS / XFS scatters and the Bonus Boost mode, RTP 9
 | Character | **Doc**, an original top-hatted voodoo showman with a skull cane: 10 Blender clips (idle, enter, exit, anticipation, win, big win, lose, cane twirl, hat tip, conjure), 8 faces |
 | Background | Bourbon Street as a static 4K plate, with live layers on top (`frontend/bgscene.js`): gas lamps that flicker, neon signs that buzz, a breathing moon, reflections that follow the lamps, 170 twinkling, slowly drifting stars, and three bands of drifting green and violet fog |
 | Multi | No pop. The potion is hexed away: it burns from the rim inward along a voodoo-green edge, its spirit (a ghost of the XFS skull) rises, and green smoke and motes curl up (`hexIcon`). Its value condenses out of spirit wisps (`voodooReveal`); values evaporate rather than pop |
+| Board | An opaque midnight-velvet backing with a fleur-de-lis damask, cut to the iron frame's exact opening (`tools/nola/board_back.py`). The board is sized so the whole frame and the HUD fit on screen |
 | UI | Iron-lace frame and panels, Mardi Gras gold digits and headlines, a VOODOO ON BOURBON wordmark, Fredoka throughout |
 | Music | A Bourbon Street brass band: bucket drums, sax, trombone, trumpet and sousaphone (Lyria 3 Pro). Base F, menu C, intro B-flat, bonus G minor, total B-flat; all five are seamless loops |
 | Sounds | Every sound except the HUD buttons, 52 sets: bucket-drum spin, gourd rattle, streetcar bells, brass stings, sad trombone, bead and doubloon showers, a landing sound for each symbol's material, Doc's cane, hat and magic |
@@ -47,6 +48,9 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
    `tools/music/build.py --wav ...` and paste the printed `MUSIC` table.
 8. **Sounds**: `tools/sfx/nola.py all` (prompts in `nola_spec.py`), `tools/sfx/nola_textures.py` for the reels rattle
    and the doubloon rain, then `node tools/sfx/encode_new.js <.tools/pw/node_modules/playwright> %TEMP%/nola_sfx/written.txt`.
+
+Browser tests (headless Playwright, with the mock RGS running): `node tools/nola/qa_browser.js` checks the live
+layers, the character and the console; `node tools/nola/qa_replay.js` replays a round with a Multi and captures the hex-away.
 
 ## Run it locally
 

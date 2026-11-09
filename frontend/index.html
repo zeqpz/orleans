@@ -3188,15 +3188,27 @@
   @keyframes bgmistbreathe { from { opacity: calc(var(--op) * .55); translate: 0 1.5%; } to { opacity: var(--op); translate: 0 -1.5%; } }
   @media (prefers-reduced-motion: reduce) { #bgscene .bgmist { animation: none; } }
   /* the reels sit on a deep violet see-through shade of the street, not the graffiti build's grey plate */
-  .boardplate {
-    background: radial-gradient(ellipse at 50% 40%, rgba(40, 18, 64, .6), rgba(14, 6, 26, .78)); opacity: 1;
-    box-shadow: inset 0 0 40px rgba(8, 0, 20, .6);
+  /* an opaque painted backing (assets/board_bg.webp: midnight velvet, fleur-de-lis damask) filling the frame's
+     opening: the plate sits 14px in, the iron's opening 18px in, so it runs 4px under the lace all round and no
+     street shows between the two; a dark inner shadow fades its edge into the black iron */
+  .boardplate { display: none; }
+  /* #paintback: the opaque velvet backing cut to the iron frame's own opening (tools/nola/board_back.py: flood-filled
+     through every gap between the spikes and the lace up to the solid iron, grown under the metal, shadow baked in),
+     drawn in exactly the frame's box and just behind it, so it fits the outline wherever the frame is placed */
+  #paintback {
+    position: absolute; pointer-events: none; user-select: none; z-index: -1;   /* behind the reels and their canvas, like the plate was */
   }
   /* the iron-lace frame (assets/frame.webp): its opening sized round the board (tools/nola: frame fracs) */
-  #paintframe {
-    width: calc((100% - 36px) / var(--fw, .8291)); height: calc((100% - 36px) / var(--fh, .6847));
-    left: calc(18px - (100% - 36px) * var(--fx, .10144)); top: calc(18px - (100% - 36px) * var(--fy, .22404));
+  /* (literal fractions: --fx/--fy are the frame's idle drift in px, set by frameIdle) */
+  #paintframe, #paintback {
+    width: calc((100% - 36px) / .8291); height: calc((100% - 36px) / .6847);
+    left: calc(18px - (100% - 36px) * .10144); top: calc(18px - (100% - 36px) * .22404);
   }
+  /* The iron frame hangs past the board's own box - about 0.2 of its height above and below and 0.08 of its width at
+     the sides (the fractions above). fitToScreen() sizes the page by the board's box, so the board carries that
+     overhang as margin: the fit then shrinks the board until the whole frame, and the HUD under it, are on screen
+     (owner, 2026-11-08: the frame ran off the top and over the bar). */
+  .board { margin: calc(.205 * var(--bh, 781px)) calc(.085 * var(--bw, 963px)); }
   /* the spirit wisps that conjure a Multi's value (voodooReveal) */
   .spraylayer .swisp {
     width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
@@ -3213,7 +3225,7 @@
 <div id="app">
 <div class="main">
   <div class="stage">
-    <div class="board" id="board"><div class="boardplate" aria-hidden="true"></div><img id="paintframe" src="assets/frame.webp" alt="" draggable="false"></div>
+    <div class="board" id="board"><div class="boardplate" aria-hidden="true"></div><img id="paintback" src="assets/board_back.webp" alt="" draggable="false" aria-hidden="true"><img id="paintframe" src="assets/frame.webp" alt="" draggable="false"></div>
     <div class="ticker" id="ticker">Draws come from the optimized 96.7% RTP lookup tables — the real math.</div>
     <div class="banner" id="banner"><div class="big" id="bannerBig"></div><div class="sub2" id="bannerSub"></div><img id="bannerMural" class="muralimg" alt=""></div>
     <div class="tally" id="tally">0.00</div>
@@ -3632,7 +3644,7 @@ function frameIdle() {
   const frame = $("paintframe");
   if (REDUCED_MOTION || !frame) return;
   const dx = drift(2.5, 4.5), dy = drift(2.5, 4.5), dr = drift(3, 5), dsx = drift(2.5, 4.5), dsy = drift(2.5, 4.5);
-  wander(() => [frame, document.querySelector("#board .sprayrim")].filter(Boolean), t => ({
+  wander(() => [frame, $("paintback"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame
     transform: `translate(${(5 * dx(t)).toFixed(2)}px, ${(5 * dy(t)).toFixed(2)}px) rotate(${(.35 * dr(t)).toFixed(3)}deg) scale(${(1 + .004 * dsx(t)).toFixed(4)}, ${(1 + .004 * dsy(t)).toFixed(4)})`,
   }), { seg: 8, rate: 6 });
 }
