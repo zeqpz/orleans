@@ -75,7 +75,7 @@ rep('<div class="boardplate" aria-hidden="true"></div><img id="paintframe" src="
     '<div class="boardplate" aria-hidden="true"></div><img id="paintback" src="assets/board_back.webp" alt="" draggable="false" aria-hidden="true"><img id="paintframe" src="assets/frame.webp" alt="" draggable="false">')
 
 rep('  wander(() => [frame, document.querySelector("#board .sprayrim")].filter(Boolean), t => ({',
-    '  wander(() => [frame, $("paintback"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame')
+    '  wander(() => [frame, $("paintback"), $("candleflame"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame')
 
 # ------------------------------------------------------------------ the living street (bgscene.js) in place of the wall
 rep('<script src="wallfx.js"></script>\n', '<script src="bgscene.js"></script>\n')
@@ -404,8 +404,16 @@ CSS = '''
   /* the iron-lace frame (assets/frame.webp): its opening sized round the board (tools/nola: frame fracs) */
   /* (literal fractions: --fx/--fy are the frame's idle drift in px, set by frameIdle) */
   #paintframe, #paintback {
-    width: calc((100% - 36px) / .8291); height: calc((100% - 36px) / .6847);
-    left: calc(18px - (100% - 36px) * .10144); top: calc(18px - (100% - 36px) * .22404);
+    width: calc((100% - 36px) / .8273); height: calc((100% - 36px) / .6816);
+    left: calc(18px - (100% - 36px) * .10330); top: calc(18px - (100% - 36px) * .22724);
+  }
+  /* the skull candle's live flame (candleflame.js) on its wick: 95.23% across and 6.2% down the frame's box; the
+     canvas is 13% x 13% of the frame (wide enough for the glow to fade inside it), its wick drawn at 50% across and 86% down it */
+  #candleflame {
+    position: absolute; z-index: 4; pointer-events: none;
+    width: calc((100% - 36px) / .8273 * .13); height: calc((100% - 36px) / .6816 * .13);
+    left: calc(18px - (100% - 36px) * .10330 + (100% - 36px) / .8273 * .8873);
+    top: calc(18px - (100% - 36px) * .22724 - (100% - 36px) / .6816 * .0498);
   }
   /* The iron frame hangs past the board's own box - about 0.2 of its height above and below and 0.08 of its width at
      the sides (the fractions above). fitToScreen() sizes the page by the board's box, so the board carries that

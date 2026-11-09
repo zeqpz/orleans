@@ -3201,8 +3201,16 @@
   /* the iron-lace frame (assets/frame.webp): its opening sized round the board (tools/nola: frame fracs) */
   /* (literal fractions: --fx/--fy are the frame's idle drift in px, set by frameIdle) */
   #paintframe, #paintback {
-    width: calc((100% - 36px) / .8291); height: calc((100% - 36px) / .6847);
-    left: calc(18px - (100% - 36px) * .10144); top: calc(18px - (100% - 36px) * .22404);
+    width: calc((100% - 36px) / .8273); height: calc((100% - 36px) / .6816);
+    left: calc(18px - (100% - 36px) * .10330); top: calc(18px - (100% - 36px) * .22724);
+  }
+  /* the skull candle's live flame (candleflame.js) on its wick: 95.23% across and 6.2% down the frame's box; the
+     canvas is 13% x 13% of the frame (wide enough for the glow to fade inside it), its wick drawn at 50% across and 86% down it */
+  #candleflame {
+    position: absolute; z-index: 4; pointer-events: none;
+    width: calc((100% - 36px) / .8273 * .13); height: calc((100% - 36px) / .6816 * .13);
+    left: calc(18px - (100% - 36px) * .10330 + (100% - 36px) / .8273 * .8873);
+    top: calc(18px - (100% - 36px) * .22724 - (100% - 36px) / .6816 * .0498);
   }
   /* The iron frame hangs past the board's own box - about 0.2 of its height above and below and 0.08 of its width at
      the sides (the fractions above). fitToScreen() sizes the page by the board's box, so the board carries that
@@ -3382,6 +3390,7 @@
 <script src="rules.js"></script>
 <script src="sprayrim.js"></script>
 <script src="bgscene.js"></script>
+<script src="candleflame.js"></script>
 <script src="boardgl.js"></script>
 <script>
 "use strict";
@@ -3644,7 +3653,7 @@ function frameIdle() {
   const frame = $("paintframe");
   if (REDUCED_MOTION || !frame) return;
   const dx = drift(2.5, 4.5), dy = drift(2.5, 4.5), dr = drift(3, 5), dsx = drift(2.5, 4.5), dsy = drift(2.5, 4.5);
-  wander(() => [frame, $("paintback"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame
+  wander(() => [frame, $("paintback"), $("candleflame"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame
     transform: `translate(${(5 * dx(t)).toFixed(2)}px, ${(5 * dy(t)).toFixed(2)}px) rotate(${(.35 * dr(t)).toFixed(3)}deg) scale(${(1 + .004 * dsx(t)).toFixed(4)}, ${(1 + .004 * dsy(t)).toFixed(4)})`,
   }), { seg: 8, rate: 6 });
 }
