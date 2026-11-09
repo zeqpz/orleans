@@ -25,7 +25,7 @@ HAZE = (4, 14)                          # alpha (of 255) under which the bloom's
 # the board is their rest pose's own visible extent, centred on it, plus FIT_PAD units round it - so the board's
 # fit (88% of the cell, see measureRigBox) sizes them by what is drawn, not by the canvas (owner, 2026-11-02:
 # the lowrider sat small and oddly on the board; the freight car is the same shape).
-FIT_TO_ART = {"L10", "L9"}
+FIT_TO_ART = set()           # (Smukiez fitted its lowrider + freight car; every Voodoo icon fills its square)
 FIT_PAD = 0.15
 
 
@@ -122,6 +122,8 @@ if __name__ == "__main__":
         man_path = os.path.join(OUT, "manifest.json")
         manifest = json.load(open(man_path))
         for sid, entry in manifest["symbols"].items():
+            if not os.path.exists(os.path.join(ROOT, "art", "blender", "parts", sid, "parts.json")):
+                continue                     # a tier made from another symbol's sheets (potion_tiers.py) keeps its own
             apply_fit(sid, entry)
             print(sid, entry["icon"], entry.get("fit", ""))
         json.dump(manifest, open(man_path, "w"), indent=1)

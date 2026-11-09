@@ -446,6 +446,78 @@ rep('  caneTap: ["sfx_cane_tap", 3, 0.16],',
 rep('<title>Voodoo on Bourbon</title>\n<link rel="stylesheet" href="assets/vnum/glyphs.css">',
     '<title>Voodoo on Bourbon</title>')
 
+rep('<script src="boardgl.js"></script>\n<script>\n"use strict";',
+    '<script src="boardgl.js"></script>\n<script src="charrig.js"></script>\n<script>\n"use strict";')
+
+rep('async function makeCharacter({ el, name, flavour, swap = {}, shadow = true }) {\n  const root = document.getElementById(el);\n  if (!root || typeof PIXI === "undefined") return null;',
+    'async function makeCharacter({ el, name, flavour, swap = {}, shadow = true }) {\n  // a character with a live rig (charrig.js: Blender\'s bones posed on every refresh) plays that; one without\n  // falls through to its baked frames\n  if (window.CharRig) {\n    const rigged = await CharRig.make({ el, name, flavour, swap, shadow });\n    if (rigged !== undefined) return rigged;\n  }\n  const root = document.getElementById(el);\n  if (!root || typeof PIXI === "undefined") return null;')
+
+rep('function placeScenery() {\n  const root = document.documentElement.style, chars = [$("charfx")].filter(Boolean);\n  root.removeProperty("--char-height");   // the stylesheet\'s size first (an upright screen may cap it below)\n  if (!matchMedia("(max-width: 1100px) and (orientation: portrait)").matches) {\n    root.removeProperty("--char-drop"); root.removeProperty("--tag-top");\n    for (const el of chars) el.style.removeProperty("--char-cut");\n    return;\n  }\n  const stage = document.querySelector(".stage"), board = $("board");\n  if (!stage || !board || !chars.length) return;\n  // two invisible specks on the line through the middle of the frame\'s top band (the band runs\n  // 1% to 4% of the frame art in from its edge, and the art hangs 10px past the board), one at\n  // each end of the stage: placed in its own coordinates, read back on screen with the lean and\n  // the fit applied\n  if (!sceneryProbes) {\n    sceneryProbes = ["left", "right"].map(side => {\n      const p = document.createElement("i");\n      p.setAttribute("aria-hidden", "true");\n      p.style.cssText = `position:absolute;${side}:0;width:1px;height:1px;visibility:hidden;pointer-events:none`;\n      stage.appendChild(p);\n      return p;\n    });\n  }\n  const band = -10 + .025 * (board.offsetHeight + 20);\n  for (const p of sceneryProbes) p.style.top = band.toFixed(1) + "px";\n  const [a, b] = sceneryProbes.map(p => p.getBoundingClientRect());\n  const lineAt = x => a.top + (b.left === a.left ? 0 : (x - a.left) / (b.left - a.left) * (b.top - a.top));\n  const ref = lineAt(innerWidth / 2);\n  // A tablet\'s board fills most of an upright screen, so the room over it is short: there the\n  // pair is sized down until their heads clear the top (their box shows about .58 of its height\n  // over the board: .65 above the line, less the lift and the canvas headroom). The box is\n  // --char-height x 1.3 x 1.2 tall. (2026-11-03 QA: 768x1024 had their heads cut off at the top.)\n  const fitsH = (ref - 22) / .6;\n  if (chars[0].offsetHeight > fitsH && fitsH > 40) root.setProperty("--char-height", (fitsH / 1.56).toFixed(1) + "px");\n  const feet = ref + .35 * chars[0].offsetHeight;                 // the character boxes\' bottom edge\n  root.setProperty("--char-drop", (feet - innerHeight).toFixed(1) + "px");   // bottom = screen bottom - feet\n  // #walltag\'s top is its centre (it is moved up half its height), measured inside #bgwall,\n  // which starts 4% of the screen above the screen\'s top\n  root.setProperty("--tag-top", (ref - .08 * innerHeight + .04 * innerHeight).toFixed(1) + "px");\n  // each figure\'s cut, in its own box: worked out down its centre column, where the lean (a\n  // turn about that column) moves nothing up or down, from its lift and its depth scale (both\n  // taken about its bottom edge)\n  for (const el of chars) {\n    const cs = getComputedStyle(el), h = el.offsetHeight;\n    const lift = (parseFloat(cs.getPropertyValue("--char-lift")) || 0) / 100 * h;\n    const depth = parseFloat(cs.scale) || 1;\n    const r = el.getBoundingClientRect();\n    const cut = (feet - lift - lineAt(r.left + r.width / 2)) / depth;\n    el.style.setProperty("--char-cut", Math.max(0, Math.min(h, cut)).toFixed(1) + "px");\n  }\n}\naddEventListener("resize", fitToScreen);\n',
+    '// Doc stands on the left sidewalk of the street (owner, 2026-11-09: "always standing on the sidewalk"), wherever the\n// screen puts the painting. WALK is that sidewalk on the plate (assets/bonus_wall.webp) as fractions of it, read off\n// the painting: its back edge along the shop fronts and its front edge along the curb\'s top, each a line over x; he\n// stands DEPTH of the way out from the shops toward the curb (near the curb: he is big, so he is near us).\nconst WALK = { back: [[0, .745], [.2, .73], [.3, .705], [.37, .69]],\n               front: [[0, .925], [.1, .9], [.2, .852], [.3, .81], [.37, .796]], depth: .7, x: [.07, .33] };\nconst walkEdge = (fx, edge) => {\n  const e = WALK[edge];\n  if (fx <= e[0][0]) return e[0][1];\n  for (let i = 1; i < e.length; i++) {\n    if (fx <= e[i][0]) { const [x0, y0] = e[i - 1], [x1, y1] = e[i]; return y0 + (y1 - y0) * (fx - x0) / (x1 - x0); }\n  }\n  return e[e.length - 1][1];\n};\nconst walkAt = fx => walkEdge(fx, "back") + (walkEdge(fx, "front") - walkEdge(fx, "back")) * WALK.depth;\n// A landscape screen: the painting covers the window as it always has; Doc\'s box is moved up or down (--char-walk)\n// until his soles - the box\'s bottom edge, where his canvas stands them - are on the sidewalk under his shoes.\nfunction standOnWalk(el) {\n  const scene = $("bgscene");\n  if (!scene || el.classList.contains("bounce")) return;\n  el.style.setProperty("--char-walk", "0px");\n  const s = scene.getBoundingClientRect(), r = el.getBoundingClientRect();\n  if (!s.width || !r.height) return;\n  const fx = Math.max(WALK.x[0], Math.min(WALK.x[1], (r.left + r.width * .5 - s.left) / s.width));\n  const target = Math.min(innerHeight - 4, s.top + walkAt(fx) * s.height);\n  el.style.setProperty("--char-walk", (r.bottom - target).toFixed(1) + "px");\n}\nconst sceneStyle = ["width", "height", "left", "top", "translate"];\nfunction placeScenery() {\n  const root = document.documentElement.style, chars = [$("charfx")].filter(Boolean), scene = $("bgscene");\n  root.removeProperty("--char-height");   // the stylesheet\'s size first (an upright screen may cap it below)\n  if (!matchMedia("(max-width: 1100px) and (orientation: portrait)").matches) {\n    root.removeProperty("--char-drop"); root.removeProperty("--tag-top");\n    if (scene) for (const k of sceneStyle) scene.style.removeProperty(k);\n    for (const el of chars) { el.style.removeProperty("--char-cut"); standOnWalk(el); }\n    return;\n  }\n  // An upright phone or tablet: the board fills the bottom of the screen, and the street is framed above it - the\n  // painting scaled and moved so its left sidewalk runs just over the iron frame\'s spikes, sky, moon and spires above\n  // - and Doc stands on that sidewalk, whole, his shoes just clear of the iron (no longer half behind the board).\n  const frame = $("paintframe"), wall = $("bgwall");\n  if (!frame || !scene || !wall || !chars.length) return;\n  const el = chars[0], cs = getComputedStyle(el);\n  for (const e of chars) { e.style.removeProperty("--char-cut"); e.style.setProperty("--char-walk", "0px"); }\n  const fr = frame.getBoundingClientRect();\n  const sole = fr.top + .004 * fr.height - 2;                     // just over the spike tips\n  // his standing height (1.3 x --char-height; the box is 1.56 x) fits between the top of the screen and the sole\n  const room = (sole - 10) / 1.3;\n  if (el.offsetHeight / 1.56 > room && room > 30) root.setProperty("--char-height", room.toFixed(1) + "px");\n  const h = el.offsetHeight, lift = (parseFloat(cs.getPropertyValue("--char-lift")) || 0) / 100 * h;\n  root.setProperty("--char-drop", (sole + lift - innerHeight).toFixed(1) + "px");   // bottom edge = sole + lift\n  root.removeProperty("--tag-top");\n  // the painting: its sidewalk (a fifth of the way along it, between the lamp post and the corner) under his shoes,\n  // at the sole line; big enough that it still reaches the top of the screen and both its sides\n  const r = el.getBoundingClientRect(), footX = r.left + r.width * .5, fx = .2, wy = walkAt(fx);\n  const Hp = Math.max(sole / wy, (innerWidth - footX) / ((1 - fx) * 16 / 9), Math.max(0, footX) / (fx * 16 / 9));\n  const Wp = Hp * 16 / 9, ox = footX - fx * Wp, oy = sole - wy * Hp, wr = wall.getBoundingClientRect();\n  Object.assign(scene.style, { width: Wp.toFixed(1) + "px", height: Hp.toFixed(1) + "px",\n    left: (ox - wr.left).toFixed(1) + "px", top: (oy - wr.top).toFixed(1) + "px", translate: "none" });\n}\naddEventListener("resize", fitToScreen);')
+
+rep('  const fromOgg = () => fetchMusic(name).then(b => actx.decodeAudioData(b)).then(buf => ({ buf, at: 0 }));\n  const fromAac = () => (OPUS_OK ? fetch(m.aac).then(r => r.arrayBuffer()) : fetchMusic(name)).then(b => actx.decodeAudioData(b))',
+    '  // (decodeAudioData empties the bytes it is handed: the cached copy is kept whole for the next decode)\n  const fromOgg = () => fetchMusic(name).then(b => actx.decodeAudioData(b.slice(0))).then(buf => ({ buf, at: 0 }));\n  const fromAac = () => (OPUS_OK ? fetch(m.aac).then(r => r.arrayBuffer()) : fetchMusic(name).then(b => b.slice(0))).then(b => actx.decodeAudioData(b))')
+
+rep('  for (const sheet of document.styleSheets) {\n    try { walk(sheet.cssRules); } catch (err) { /* a sheet from elsewhere: nothing to read */ }\n  }',
+    "  for (const sheet of document.styleSheets) {\n    try { walk(sheet.cssRules); } catch (err) { /* a sheet from elsewhere: nothing to read */ }\n  }\n  // art the voodoo build never shows, though the base build's rules still name it: not fetched, not held\n  if (VOODOO) for (const u of [...urls]) if (UNSHOWN_ART.test(u)) urls.delete(u);")
+
+rep('function assetUrls() {',
+    'const UNSHOWN_ART = /assets\\/(wall_tag|plate_grey|brickwall|spin_plate|spin_btn_arrows)\\.webp|assets\\/wallfx\\/|assets\\/rim\\//;\nfunction assetUrls() {')
+
+rep('  urls.add("assets/wall_tag.webp");   // the tag on the wall is an <img>, so no rule names it',
+    '  if (!VOODOO) urls.add("assets/wall_tag.webp");   // the tag on the wall is an <img>, so no rule names it')
+
+rep('  if (REDUCED_MOTION) for (const id of Object.keys(TIER))',
+    '  if (REDUCED_MOTION && !VOODOO) for (const id of Object.keys(TIER))')
+
+rep('<img id="walltag" src="assets/wall_tag.webp"',
+    '<img id="walltag" alt=""')
+
+rep('<head>',
+    '<head>\n<link rel="icon" href="data:,">')
+
+rep('{ mode: "extremebonus", key: "xfs", title: "Free Spins",',
+    '{ mode: "extremebonus", key: "xfs", title: "Xtreme Free Spins",')
+
+rep('  $("betVal").textContent = fmt(shown);\n  fitFigure($("betVal"), fmt(shown));',
+    '  $("betVal").textContent = fmt(shown);\n  fitFigure($("betVal"), fmt(shown));\n  if (!state.playing && !(shownWin > 0)) $("roundWin").textContent = fmt(0);   // an empty WIN, in the currency')
+
+rep('eachCell((el, r, y) => setCell(r, y, { name: ["L1","L2","L3","L4","L5"][(r + y) % 5] }));',
+    '{\n  const pool = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "H1", "H2", "H3", "H4", "L1", "L3", "L5", "L7"];\n  let seed = 20261109;\n  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;\n  const grid = {};\n  eachCell((el, r, y) => {\n    let name, n = 0;\n    do { name = pool[Math.floor(rnd() * pool.length)]; n++; }\n    while (n < 20 && SYM[name] === undefined || n < 20 && (grid[(r - 1) + ":" + y] === name || grid[r + ":" + (y - 1)] === name));\n    grid[r + ":" + y] = SYM[name] ? name : "L1";\n    setCell(r, y, { name: grid[r + ":" + y] });\n  });\n}')
+
+rep('function standOnWalk(el) {\n  const scene = $("bgscene");\n  if (!scene || el.classList.contains("bounce")) return;\n  el.style.setProperty("--char-walk", "0px");\n  const s = scene.getBoundingClientRect(), r = el.getBoundingClientRect();\n  if (!s.width || !r.height) return;',
+    '// Doc\'s reach in his drawing (art px): his centre line, standing height, cane tip and open fingertips\nconst DOC_ART = { cx: 512, rest: 1502, left: 150, right: 990 };\nfunction standOnWalk(el) {\n  const scene = $("bgscene"), frame = $("paintframe");\n  if (!scene || el.classList.contains("bounce")) return;\n  el.style.setProperty("--char-walk", "0px");\n  el.style.setProperty("--char-nudge", "0px");\n  let r = el.getBoundingClientRect();\n  const s = scene.getBoundingClientRect();\n  if (!s.width || !r.height) return;\n  // his open hand clear of the iron frame: the box slides left until it is, never so far the cane leaves the screen\n  if (frame) {\n    const hr = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--char-headroom")) || 1;\n    const k = r.height / hr / DOC_ART.rest, mid = r.left + r.width / 2;\n    const over = mid + (DOC_ART.right - DOC_ART.cx) * k + 6 - frame.getBoundingClientRect().left;\n    const room = mid + (DOC_ART.left - DOC_ART.cx) * k - 4;\n    const nudge = Math.max(0, Math.min(over, room));\n    if (nudge > 0) { el.style.setProperty("--char-nudge", nudge.toFixed(1) + "px"); r = el.getBoundingClientRect(); }\n  }')
+
+rep('{ mode: "extremebonus", key: "xfs", title: "Xtreme Free Spins",',
+    '{ mode: "extremebonus", key: "xfs", title: "Xtreme Spins",')
+
+rep('    await Promise.all(ids.map(id => symSheet(id, "land")));\n    (async () => {\n      for (const clip of ["hit", "idle", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));\n    })();\n    return ids.length > 0;\n  })().catch(e => { console.warn("animated symbols unavailable:", e); return false; });\n  return symReady;\n}',
+    '    await Promise.all(ids.map(id => symSheet(id, "land")));\n    SYMF.rest = (async () => {\n      for (const clip of ["hit", "idle", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));\n    })();\n    return ids.length > 0;\n  })().catch(e => { console.warn("animated symbols unavailable:", e); return false; });\n  return symReady;\n}\n// Every clip in, cut and on the GPU (perf, 2026-11-09): the loading screen and a replay\'s Play wait on this.\n// The landings alone used to let the game in, and the hit, idle and Multi clips were decoded, resized and\n// uploaded while the first round was already playing (~2.5 s of a slow phone\'s main thread).\nconst symAllReady = () => loadSymFrames().then(ok => (SYMF.rest || Promise.resolve()).then(() => symHoldQ).then(() => ok));')
+
+rep('function warmHexKits() {\n  const imgs = Object.values(FLAT).filter(Boolean), step = () => {\n    const im = imgs.shift();\n    if (!im) return;\n    if (im.complete && im.naturalWidth) hexKit(im); else imgs.push(im);\n    (window.requestIdleCallback || (f => setTimeout(f, 60)))(step);\n  };\n  setTimeout(step, 2500);\n}\nif (VOODOO) warmHexKits();',
+    '// a picture that has arrived (true) or failed (false)\nconst picReady = img => img.complete ? Promise.resolve(img.naturalWidth > 0) : new Promise(r => {\n  img.addEventListener("load", () => r(true), { once: true }); img.addEventListener("error", () => r(false), { once: true });\n});\nconst nextTask = () => new Promise(r => setTimeout(r, 0));\n// Every kit cut while the loading screen is up, one per task (perf, 2026-11-09): they used to wait for idle\n// moments, which a busy board seldom has, so the first Multi\'s hex cut its kit mid-round\nfunction warmHexKits() {\n  return Object.values(FLAT).filter(Boolean).reduce((p, im) => p.then(() => picReady(im)).then(ok => { if (ok) hexKit(im); return nextTask(); }), Promise.resolve());\n}\n// what the round draws for the first time - the dissolves and the motion blur - made once, before play\nlet fxReady = null;\nconst warmFX = () => fxReady || (fxReady = Promise.all([VOODOO ? warmHexKits() : null, makeSmears()]).catch(() => {}));')
+
+rep('function makeSmears() {\n  if (REDUCED_MOTION) return;\n  const names = Object.keys(FLAT), tries = {};\n  // one symbol a turn - a few ms of pixel work - close behind one another: the first spin wants them\n  // all, and a page drawing every frame has little idle time to wait for\n  const idle = window.requestIdleCallback ? f => requestIdleCallback(f, { timeout: 200 }) : f => setTimeout(f, 40);\n  const next = () => {\n    const name = names.shift();\n    if (!name) return;\n    const img = FLAT[name];\n    if (img.complete && img.naturalWidth) {\n      makeSmear(img).then(url => {',
+    'function makeSmears() {\n  if (REDUCED_MOTION) return Promise.resolve();\n  const names = Object.keys(FLAT), made = [];\n  // one symbol a task - a few ms of pixel work - close behind one another, while the loading screen is up:\n  // the first spin wants them all (perf, 2026-11-09: in idle moments after the loader, a replay or a quick\n  // first spin cut them mid-round). Settles once every one is made and decoded.\n  return names.reduce((p, name) => p.then(() => picReady(FLAT[name])).then(ok => {\n    const img = FLAT[name];\n    if (ok) {\n      made.push(makeSmear(img).then(url => {')
+
+rep('          eachCell((el, r, y) => { if (shownSym[r] && shownSym[r][y] && shownSym[r][y].name === name) smearOn(el, name); });\n        });\n      }).catch(() => { /* that symbol falls without a blur */ });\n    } else if ((tries[name] = (tries[name] || 0) + 1) < 20) names.push(name);   // its picture is still on its way\n    idle(next);\n  };\n  idle(next);\n}',
+    '          eachCell((el, r, y) => { if (shownSym[r] && shownSym[r][y] && shownSym[r][y].name === name) smearOn(el, name); });\n        });\n      }).catch(() => { /* that symbol falls without a blur */ }));\n    }\n    return nextTask();\n  }), Promise.resolve()).then(() => Promise.all(made));\n}')
+
+rep("  waits.push(one(loadSymFrames()));  // the animated symbols: Blender's frames (the landings; the rest follows)",
+    "  waits.push(one(symAllReady()));    // the animated symbols: Blender's frames, every clip cut and uploaded\n  waits.push(one(warmFX()));         // the dissolves and the motion blur, cut before the first round")
+
+rep('  loaded.then(() => { if (fill) fill.style.width = "100%"; warmBursts(); makeSmears(); });',
+    '  loaded.then(() => { if (fill) fill.style.width = "100%"; if (!VOODOO) warmBursts(); });   // (no icon bursts in the voodoo build: each is hexed)')
+
+rep('  await Promise.race([Promise.all([loadSymFrames(), prepareSpray(), charsLoaded]).catch(() => {}), new Promise(r => setTimeout(r, 15000))]);',
+    '  await Promise.race([Promise.all([symAllReady(), prepareSpray(), charsLoaded, warmFX()]).catch(() => {}), new Promise(r => setTimeout(r, 15000))]);')
+
+rep('    SYMF.rest = (async () => {\n      for (const clip of ["hit", "idle", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));\n    })();',
+    '    SYMF.rest = (async () => {\n      for (const clip of ["hit", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));\n    })();\n    SYMF.rest.then(() => Promise.all(ids.map(id => symSheet(id, "idle").catch(() => {}))));')
+
+rep("// Every clip in, cut and on the GPU (perf, 2026-11-09): the loading screen and a replay's Play wait on this.\n// The landings alone used to let the game in, and the hit, idle and Multi clips were decoded, resized and\n// uploaded while the first round was already playing (~2.5 s of a slow phone's main thread).",
+    "// The clips a round plays within seconds, cut and on the GPU (perf, 2026-11-09): the loading screen and a\n// replay's Play wait on this. The landings alone used to let the game in, and the hit, idle and Multi clips were\n// resized on the page while the first round was playing (~2.5 s of a slow phone's main thread). Now every sheet\n// is resized in the board's workers (boardgl.js), and only the idles - the biggest clip, which a resting symbol\n// can do without for a moment (it holds its rest pose) - are still arriving once the game is up.")
+
 # ------------------------------------------------------------------ the voodoo look (appended to the stylesheet)
 CSS = '''
   /* ---- Voodoo on Bourbon (2026-11-08) ---------------------------------------------------------------
@@ -575,6 +647,27 @@ CSS = '''
   .fbox .fmult { display: inline-flex; align-items: center; }
   .multlayer .gmult[hidden] { display: none !important; }
   .multlayer .gmult { font-size: calc(42px * var(--shrink, 1)); }   /* the numerals fill the border's opening */
+
+  /* Doc on the sidewalk (placeScenery): --char-walk moves his box so his soles land on the painted sidewalk */
+  #charfx { bottom: calc(-1 * var(--char-drop) + var(--char-walk, 0px)); }
+  /* An upright screen frames the street above the board (placeScenery sizes #bgscene there); under it, behind the
+     board and round the controls, the same painting at full size shows its cobbles. Doc's shoes are on show now,
+     so his shadow is too. */
+  @media (max-width: 1100px) and (orientation: portrait) {
+    #bgwall { background: #0d0b1c url("assets/bonus_wall.webp") 50% 100% / cover no-repeat; }
+    .charshadow { display: block; }
+  }
+  /* A squarer desktop window (5:4, 4:3 at full size) has no more room beside the board than a small one: Doc is
+     sized to that room and centred in it, as on the small landscape windows */
+  @media (min-width: 1081px) and (orientation: landscape) and (max-aspect-ratio: 3/2) and (min-height: 501px) {
+    :root {
+      --char-height: clamp(24vh, calc((47vw - 43.5vh) / .6), 42.5vh);
+      --char-inset: calc((50vw - 43.5vh - var(--char-height) * .94) / 2);
+    }
+    #charfx { left: var(--char-inset); }
+  }
+
+  #charfx { margin-left: calc(-1 * var(--char-nudge, 0px)); }   /* standOnWalk: the open hand clear of the frame */
 '''
 rep("</style>\n</head>", CSS + "</style>\n</head>")
 
@@ -595,6 +688,16 @@ RULES = [
     ("Wall Lines", "Hex Lines"),
     ("Crew Leaders", "FS scatters"), ("Crew Leader", "FS scatter"),
     ("Phantoms", "XFS scatters"), ("The Phantom", "The XFS scatter"), ("Phantom", "XFS scatter"),
+    # social mode (review 2026-11-09): "costs x1.25" slipped past the "cost" swap, and "not a buy" became "not a get"
+    ('    ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"],',
+     '    ["not a buy", "not a one-off"], ["costs", "takes"],   // (social review 2026-11-09: "costs x1.25", "not a get")\n'
+     '    ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"],'),
+]
+# rgs.js (review 2026-11-09): an amount too small for even 4 decimals printed as a bare "0."
+RGS = [
+    ('        if (s.split(".")[1] && s.split(".")[1].length < meta.decimals) s = v.toFixed(meta.decimals);',
+     '        // (an amount too small to show even at maxDec came out "0." - never a bare point: the usual decimals)\n'
+     '        if ((s.split(".")[1] || "").length < meta.decimals) s = v.toFixed(meta.decimals);'),
 ]
 
 if __name__ == "__main__":
@@ -606,4 +709,9 @@ if __name__ == "__main__":
     # the H names live in the same table: print them so they can be checked
     open(os.path.join(FE, "rules.js"), "w", encoding="utf-8", newline="\n").write(rs)
     print("index.html:", len(ED), "edits; rules.js changed:", rs != s0)
+    gp = os.path.join(FE, "rgs.js")
+    g = open(gp, encoding="utf-8").read()
+    for a, b in RGS:
+        g = g.replace(a, b)
+    open(gp, "w", encoding="utf-8", newline="\n").write(g)
     print(re.findall(r'H1: "[^"]*".*', rs)[:2])

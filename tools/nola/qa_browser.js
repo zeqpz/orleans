@@ -19,7 +19,8 @@ require("fs").mkdirSync(OUT, { recursive: true });
   page.on("requestfailed", r => errors.push("failed: " + r.url()));
   page.on("response", r => { if (r.status() >= 400) errors.push(r.status() + " " + r.url()); });
 
-  await page.goto(`${BASE}/index.html?sessionID=test&rgs_url=${BASE}&lang=en&device=desktop`);
+  await page.goto(`${BASE}/index.html?sessionID=test&rgs_url=${BASE}&lang=en&device=desktop`, { waitUntil: "domcontentloaded", timeout: 90000 });
+  await page.waitForFunction(() => window.__chars && window.__chars.length, null, { timeout: 120000 }).catch(() => {});
   await page.waitForTimeout(9000);
   await page.screenshot({ path: path.join(OUT, "01_features.png") });
   await page.mouse.click(960, 1000);

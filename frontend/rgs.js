@@ -250,7 +250,8 @@ const RGS = (() => {
       let s = v.toFixed(meta.decimals);
       if (extra > 0 && unit > 1 && a % unit !== 0) {
         s = v.toFixed(maxDec).replace(/0+$/, "");
-        if (s.split(".")[1] && s.split(".")[1].length < meta.decimals) s = v.toFixed(meta.decimals);
+        // (an amount too small to show even at maxDec came out "0." - never a bare point: the usual decimals)
+        if ((s.split(".")[1] || "").length < meta.decimals) s = v.toFixed(meta.decimals);
       }
       s = group(s);
       return meta.after ? `${s} ${meta.symbol}` : `${meta.symbol}${s}`;

@@ -8,7 +8,7 @@ require("fs").mkdirSync(OUT, { recursive: true });
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
   const errs = []; p.on("pageerror", e => errs.push(e.message)); p.on("response", r => { if (r.status() >= 400) errs.push(r.status() + " " + r.url()); });
-  await p.goto("http://localhost:8755/index.html?sessionID=test&rgs_url=http://localhost:8755&lang=en&device=desktop");
+  await p.goto("http://localhost:8755/index.html?sessionID=test&rgs_url=http://localhost:8755&lang=en&device=desktop", { waitUntil: "domcontentloaded", timeout: 90000 });
   for (const [ms, n] of [[900, "intro_a"], [700, "intro_b"], [1500, "intro_c"]]) { await p.waitForTimeout(ms); await p.screenshot({ path: OUT + n + ".png" }); }
   await p.waitForTimeout(6000); await p.screenshot({ path: OUT + "features.png" });
   await p.mouse.click(960, 1040); await p.waitForTimeout(3500);

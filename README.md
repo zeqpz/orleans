@@ -35,14 +35,23 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
    additive layers (hand-placed regions). `bg_export.py` writes the 4K plate, the layers, the fog bands and the star
    field (`frontend/assets/bg/`).
 4. **Character layers**: `doc_layers.py` cuts out the cane and palm wisp, aligns and composites each face, then
-   upscales to 4K (`art/nola-src/doc/`).
+   upscales to 4K (`art/nola-src/doc/`). `doc_parts.py` then cuts Doc into his rig's layered parts
+   (`art/nola-src/doc_parts/`: coat panel, both legs, cane, head, body, hat, both arms, wisp, and a patch per reaction
+   face), painting in what each part hides (the thighs under the coat, the panel behind the legs, the neck under the
+   collar, a scalp under the hat). `doc_parts.py --quick` writes only `_debug.png`, the cuts tinted.
 5. **Blender** (5.2.3; builds run live through the MCP or in the background):
    - `blender/symanim.py <ID>` builds each symbol's scene: idle, land, hit and multi clips on a bone-bent mesh plus
      effect sprites from `make_fx_sprites.py`. `blender/render_all.sh` renders all 20, 5 at a time (about 5 minutes).
-   - `blender/doc.py` is Doc's rig (bones roll-aligned to the camera, the cane kept plumb, face swaps) and his 10
-     clips.
-   - QA: `qa_sym.py all` and `qa_char.py` check loop seams, the hand-back to the rest pose and alpha at the frame
-     edge. All currently pass.
+   - `blender/doc_rig.py` is Doc's live rig: a mesh per part, 35 deforming bones (fingers on both hands, two-bone coat tails,
+     IK legs that keep the shoes planted, an IK cane arm that keeps the hand on the knob and the tip on the pavement,
+     a hat that lifts off, a two-bone wisp), springs for the head, hat, feather, cravat and coat tails, and his 10
+     clips. `-- build,export,render` writes the rig the game plays (`art/blender/chars/doc_rig/rig/`) and QA renders.
+     The game poses it live (`frontend/charrig.js`) with the bones eased between Blender's frames, so it is smooth at
+     any refresh rate; `pack_rig.py` packs it (atlases at 4 densities, ~1.4 MB for the one a screen loads).
+     (`blender/doc.py` is the old baked-frame rig, kept for reference.)
+   - QA: `qa_sym.py all` checks loop seams, the hand-back to the rest pose and alpha at the frame edge.
+     `qa_doc_rig.py` checks Doc's renders: seams opening between parts, the soles' line, the frame border, the idle's
+     loop, and a zoom sheet per clip whose crops ride the joints (`art/blender/chars/doc_rig/qa/`).
    - Packing: `tools/blender/pack_frames.py all` (14-unit frame) and `tools/blender/pack_chars.py doc`.
 6. **Front end**: `tools/nola/edit.py` applies a later edit to index.html and records it in reskin_frontend.py. `reskin_frontend.py` applies every edit to `frontend/index.html` and `rules.js` as exact
    replacements, so a changed base fails loudly. Run it on a fresh base copy.
@@ -52,7 +61,9 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
    and the doubloon rain, then `node tools/sfx/encode_new.js <.tools/pw/node_modules/playwright> %TEMP%/nola_sfx/written.txt`.
 
 Browser tests (headless Playwright, with the mock RGS running): `node tools/nola/qa_browser.js` checks the live
-layers, the character and the console; `node tools/nola/qa_replay.js` replays a round with a Multi and captures the hex-away.
+layers, the character and the console; `node tools/nola/qa_replay.js` replays a round with a Multi and captures the hex-away;
+`node tools/nola/qa_rig.js` poses every clip of Doc's live rig in the game and times it; `node tools/nola/qa_stand.js`
+checks at 15 screen sizes that his soles are on the painted sidewalk (placeScenery/standOnWalk in index.html).
 
 ## Run it locally
 

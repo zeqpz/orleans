@@ -48,6 +48,7 @@ const RULES = (() => {
   const SWEEPS = [
     ["pay table", "win table"], ["paytable", "win table"], ["payouts", "wins"], ["payout", "win"],
     ["buying", "getting"], ["gambling", "play"],
+    ["not a buy", "not a one-off"], ["costs", "takes"],   // (social review 2026-11-09: "costs x1.25", "not a get")
     ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"],
     ["at the cost of", "for"], ["cost of", "can be played for"], ["pays out", "wins"],
     ["paid out", "won"], ["pay out", "win"], ["win feature", "play feature"],

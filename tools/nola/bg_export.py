@@ -34,9 +34,32 @@ def layers(meta):
         im = Image.open(os.path.join(SRC, l["name"] + ".png")).convert("RGBA")
         x, y, w, h = l["px"]
         size = (max(1, round(w * k)), max(1, round(h * k)))
-        up = upscale4k.up4(im, size).convert("RGB")      # on black: additive light, black adds nothing
+        up = feather(upscale4k.up4(im, size).convert("RGB"))   # on black: additive light, black adds nothing
         up.save(os.path.join(OUT, l["name"] + ".webp"), "WEBP", quality=88, method=6)
     print("layers", len(meta["layers"]))
+
+
+FEATHER = 28        # px (4K) over which every light layer fades to black at its box's edges
+
+
+def feather(im):
+    """Fade a light layer to black at its edges: light cut off by its box drew a faint rectangle on the street
+    (render QA 2026-11-09: lamp_far's right edge, the candle's and the fleur sign's tops)."""
+    a = np.asarray(im).astype(np.float32)
+    h, w = a.shape[:2]
+    f = min(FEATHER, w // 4, h // 4) or 1
+    ramp = lambda n: np.clip(np.minimum(np.arange(n), np.arange(n)[::-1]) / f, 0, 1)
+    k = np.outer(ramp(h), ramp(w))
+    k = k * k * (3 - 2 * k)
+    return Image.fromarray((a * k[..., None]).round().clip(0, 255).astype(np.uint8), "RGB")
+
+
+def refeather(meta):
+    """feather the exported layers in place (no new upscale)"""
+    for l in meta["layers"]:
+        p = os.path.join(OUT, l["name"] + ".webp")
+        feather(Image.open(p).convert("RGB")).save(p, "WEBP", quality=88, method=6)
+    print("feathered", len(meta["layers"]))
 
 
 def fbm(w, h, seed, octaves=6, base=4):
@@ -112,6 +135,8 @@ if __name__ == "__main__":
         plate()
     if "layers" in what:
         layers(meta)
+    if "feather" in what:
+        refeather(meta)
     if "mist" in what:
         mist()
     if "stars" in what or not os.path.exists(os.path.join(OUT, "scene.json")):
