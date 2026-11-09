@@ -5765,6 +5765,17 @@ function flyWinToHud(chip) {
     ], { duration: 900 * tempo(), easing: "ease-out" });
   });
 }
+// a cluster's figure landing in the bar adds its amount there and then, with a quick count (owner, 2026-11-09: in a
+// normal round and in a bonus alike, never waiting for the spin to end); the board's tally (setRoundWin) then only
+// makes up any difference
+function bumpRoundWin(amount, gen) {
+  if (!(amount > 0) || gen !== hudWinGen) return;
+  const el = $("roundWin"), stat = $("winStat"), from = hudWinShown;
+  hudWinShown = from + amount;
+  if (stat) stat.classList.remove("zero");
+  if (!REDUCED_MOTION) { el.classList.remove("pop"); restyle(el); el.classList.add("pop"); }
+  countTo(el, from, hudWinShown, Math.min(countMs(), 420 * tempo()));
+}
 // figures still on their way down: the bar's WIN counts once they have landed
 let winGates = [];
 let hudWinQ = Promise.resolve(), hudWinShown = 0, hudWinGen = 0;
@@ -5783,7 +5794,11 @@ function setRoundWin(v) {
   hudWinQ = hudWinQ
     .then(() => Promise.race([Promise.all(gates), new Promise(r => setTimeout(r, 4000))]))
     .then(() => {
-      if (gen !== hudWinGen || v <= hudWinShown) return;
+      if (gen !== hudWinGen) return;
+      if (v <= hudWinShown) {   // the figures already brought it here: only a rounding difference left to settle
+        if (v < hudWinShown) { hudWinShown = v; countTo(el, v, v, 0); }
+        return;
+      }
       const from = hudWinShown;
       hudWinShown = v;
       if (stat) stat.classList.remove("zero");
@@ -6997,6 +7012,7 @@ function placeWinChip(positions, amount, mult) {
   sfx("winText");   // the win amount popping is this note's cue
   const gone = () => !chip.isConnected;
   const bye = () => chip.remove();
+  const hudGen = hudWinGen;   // the round this figure belongs to (bumpRoundWin)
   let landed;
   winGates.push(new Promise(r => { landed = r; }));   // the bar's WIN waits for this figure to arrive
   if (REDUCED_MOTION) {   // no motion: the end state, for a moment
@@ -7047,6 +7063,7 @@ function placeWinChip(positions, amount, mult) {
     await wait(REST);
     if (gone()) return;
     await flyWinToHud(chip);                  // pulled down into the bar's WIN, which pops and counts up
+    bumpRoundWin(final, hudGen);              // ...at once, by this cluster's amount
     landed();
   })().finally(() => landed());
   return IN + UP1 + (m > 1 ? GAP + HIT + UP2 : 0) + 150;

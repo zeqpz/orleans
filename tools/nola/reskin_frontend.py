@@ -530,6 +530,18 @@ rep('  .reel.spinning { clip-path: inset(-20px -60px); }',
 rep('  .reel.tumbling { clip-path: inset(-20px -60px); }',
     '  .reel.tumbling { clip-path: inset(-20px -60px calc(-1 * var(--reel-floor, 20px)) -60px); }')
 
+rep("// figures still on their way down: the bar's WIN counts once they have landed\nlet winGates = [];",
+    '// a cluster\'s figure landing in the bar adds its amount there and then, with a quick count (owner, 2026-11-09: in a\n// normal round and in a bonus alike, never waiting for the spin to end); the board\'s tally (setRoundWin) then only\n// makes up any difference\nfunction bumpRoundWin(amount, gen) {\n  if (!(amount > 0) || gen !== hudWinGen) return;\n  const el = $("roundWin"), stat = $("winStat"), from = hudWinShown;\n  hudWinShown = from + amount;\n  if (stat) stat.classList.remove("zero");\n  if (!REDUCED_MOTION) { el.classList.remove("pop"); restyle(el); el.classList.add("pop"); }\n  countTo(el, from, hudWinShown, Math.min(countMs(), 420 * tempo()));\n}\n// figures still on their way down: the bar\'s WIN counts once they have landed\nlet winGates = [];')
+
+rep('      if (gen !== hudWinGen || v <= hudWinShown) return;',
+    '      if (gen !== hudWinGen) return;\n      if (v <= hudWinShown) {   // the figures already brought it here: only a rounding difference left to settle\n        if (v < hudWinShown) { hudWinShown = v; countTo(el, v, v, 0); }\n        return;\n      }')
+
+rep('  const gone = () => !chip.isConnected;\n  const bye = () => chip.remove();',
+    '  const gone = () => !chip.isConnected;\n  const bye = () => chip.remove();\n  const hudGen = hudWinGen;   // the round this figure belongs to (bumpRoundWin)')
+
+rep("    await flyWinToHud(chip);                  // pulled down into the bar's WIN, which pops and counts up\n    landed();",
+    "    await flyWinToHud(chip);                  // pulled down into the bar's WIN, which pops and counts up\n    bumpRoundWin(final, hudGen);              // ...at once, by this cluster's amount\n    landed();")
+
 # ------------------------------------------------------------------ the voodoo look (appended to the stylesheet)
 CSS = '''
   /* ---- Voodoo on Bourbon (2026-11-08) ---------------------------------------------------------------
