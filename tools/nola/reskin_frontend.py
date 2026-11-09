@@ -353,6 +353,99 @@ rep("  if (!window.SprayFX || /[?&]norim\b/.test(location.search)) return;   // 
     "  // Voodoo on Bourbon wears its painted iron-lace frames: the graffiti build's live spray-paint rims stay off\n"
     "  // unless ?rim asks for them.\n  if (!window.SprayFX || !/[?&]rim\b/.test(location.search)) return;")
 
+rep('function tvGlitch(el, { strength = 1, every = [1300, 3600], burst = [120, 320] } = {}) {\n  if (REDUCED_MOTION || !el) return;',
+    'function tvGlitch(el, { strength = 1, every = [1300, 3600], burst = [120, 320] } = {}) {\n  if (VOODOO_NO_GLITCH || REDUCED_MOTION || !el) return;   // Voodoo on Bourbon: no TV glitch on wins or the bonus screens (owner, 2026-11-08)')
+
+rep('const VOODOO = true;',
+    'const VOODOO = true, VOODOO_NO_GLITCH = true;')
+
+rep('    if (state.multiTotal > 0) sfx(pickSfx(["bustA", "bustB"], bustMemo));',
+    '    // Voodoo on Bourbon: the sad trombone only once in a while (owner, 2026-11-08) - about one missed round in\n    // four, and never within 45 s of the last one\n    if (state.multiTotal > 0 && Math.random() < BUST_CHANCE && performance.now() - bustAt > BUST_GAP) {\n      bustAt = performance.now();\n      sfx(pickSfx(["bustA", "bustB"], bustMemo));\n    }')
+
+rep('const bustMemo = { last: null };',
+    'const bustMemo = { last: null };\nconst BUST_CHANCE = .25, BUST_GAP = 45000;\nlet bustAt = -Infinity;')
+
+rep('    --drip: url("data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 24\'><path d=\'M10 1C10 1 3 10 3 15a7 7 0 0 0 14 0C17 10 10 1 10 1z\'/></svg>");',
+    '    /* the volatility pips: simple voodoo skulls (cranium, jaw, two eyes and a nose cut out) - was a paint drip */\n    --drip: url("data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 24\'><path fill-rule=\'evenodd\' d=\'M10 1.5C5 1.5 2 5 2 9.4c0 2.6 1.2 4.6 3 5.8V18c0 .8.6 1.4 1.4 1.4H7v2.1c0 .6.4 1 1 1s1-.4 1-1v-2.1h2v2.1c0 .6.4 1 1 1s1-.4 1-1v-2.1h.6c.8 0 1.4-.6 1.4-1.4v-2.8c1.8-1.2 3-3.2 3-5.8C18 5 15 1.5 10 1.5zM6.9 8.1a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2zm6.2 0a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2zM10 12.6l-1.3 2.3h2.6z\'/></svg>");')
+
+rep('  .reel.spinning { clip-path: inset(0 -60px); }   /* the spin strip stays tight top and bottom */',
+    "  .reel.spinning { clip-path: inset(-20px -60px); }   /* Voodoo on Bourbon: the strip runs on to the iron frame's inner edge (18px out) and just under it */")
+
+rep('  .reel.tumbling { clip-path: inset(-24px -60px); }',
+    '  .reel.tumbling { clip-path: inset(-20px -60px); }   /* the same line as the spin: tiles show until they pass under the iron */')
+
+rep('    cg.addColorStop(0, "rgba(255,255,255,1)"); cg.addColorStop(.6, "rgba(255,255,255,1)"); cg.addColorStop(1, "rgba(255,255,255,0)");',
+    '    // Voodoo on Bourbon: a spirit thread, not paint - a white-hot core going ectoplasm green at its edge\n    cg.addColorStop(0, "rgba(245,255,235,1)"); cg.addColorStop(.45, "rgba(190,255,160,1)"); cg.addColorStop(1, "rgba(124,255,107,0)");')
+
+rep('      g.fillStyle = `rgba(255,255,255,${(.22 + Math.random() * .45).toFixed(2)})`;',
+    '      g.fillStyle = Math.random() < .3 ? `rgba(196,140,255,${(.3 + Math.random() * .5).toFixed(2)})`   // magic motes: green, some violet\n                                       : `rgba(160,255,140,${(.3 + Math.random() * .5).toFixed(2)})`;')
+
+rep('    ug.addColorStop(0, "rgba(10,6,16,.075)"); ug.addColorStop(.5, "rgba(10,6,16,.035)"); ug.addColorStop(1, "rgba(10,6,16,0)");',
+    '    ug.addColorStop(0, "rgba(124,255,107,.16)"); ug.addColorStop(.5, "rgba(124,255,107,.06)"); ug.addColorStop(1, "rgba(124,255,107,0)");   // a green aura')
+
+rep('let hexKitCache = null;',
+    'const hexKits = new Map();   // one dissolve (and green ghost) per symbol picture, cut on first use or while idle')
+
+rep('  if (hexKitCache && hexKitCache.img === img) return hexKitCache;',
+    '  if (img && hexKits.has(img.src)) return hexKits.get(img.src);')
+
+rep('  return (hexKitCache = { img, frames, w, h });',
+    '  // the icon\'s ghost: its own silhouette washed in ectoplasm green, faintly showing its drawing through\n  const ghost = document.createElement("canvas"); ghost.width = w; ghost.height = h;\n  const gx = ghost.getContext("2d");\n  gx.drawImage(img, 0, 0, w, h);\n  gx.globalCompositeOperation = "source-atop";\n  gx.fillStyle = "rgba(150, 255, 130, .78)"; gx.fillRect(0, 0, w, h);\n  const kit = { img, frames, w, h, ghost };\n  hexKits.set(img.src, kit);\n  return kit;')
+
+rep('  bursts.push({ hex: true, from: now, born: now, t, x: c.x, y: c.y, W, kit, drawW, glow: glowSprite("#7CFF6B"),',
+    '  // its spirit: the potion gives up the voodoo skull\'s ghost; every other icon its own\n  const spirit = (m.name === "M" && FLAT.ES && hexKit(FLAT.ES)) || kit;\n  bursts.push({ hex: true, from: now, born: now, t, x: c.x, y: c.y, W, kit, drawW, ghost: spirit.ghost, glow: glowSprite("#7CFF6B"),')
+
+rep('  // the spirit: a ghost of the voodoo skull rising out of the potion, faint and green\n  const ghost = FLAT.ES;\n  if (ghost && ghost.naturalWidth && age > 160) {\n    const q = Math.min(1, (age - 160) / (HEX_MS - 160)), gs = b.W * (.55 + .25 * q);\n    ctx.globalAlpha = .45 * Math.sin(Math.PI * q);',
+    "  // the spirit: the icon's green ghost (the potion's is the voodoo skull) rising out of it, swaying as it goes\n  const ghost = b.ghost;\n  if (ghost && age > 120) {\n    const q = Math.min(1, (age - 120) / (HEX_MS - 120)), gs = b.W * (.62 + .3 * q);\n    ctx.globalAlpha = .55 * Math.sin(Math.PI * q);")
+
+rep('  if (VOODOO && m.name === "M" && !REDUCED_MOTION && hexIcon(m)) return;',
+    '  // Voodoo on Bourbon: no icon pops or shatters - every one is hexed into its ghost and green mist (owner, 2026-11-08)\n  if (VOODOO && !REDUCED_MOTION && hexIcon(m)) return;')
+
+rep('        const hexed = VOODOO && geo[i] && geo[i].name === "M";\n        setTimeout(() => {\n          if (hexed) sfx("vanish", .94 + Math.random() * .12);   // the potion is hexed away: a ghostly whoosh, no pop\n          else { sfx("pop", rate); if (i % 3 === 0) sfxGap("paintBurst", 140, rate * .95); }',
+    '        const hexed = VOODOO && geo[i] && !REDUCED_MOTION, potion = hexed && geo[i].name === "M";\n        setTimeout(() => {\n          // hexed away: the potion with its full ghostly whoosh, the rest with the same whoosh thinned out (never\n          // closer than 110 ms) and a soft glassy ting each, so a big cluster is a shimmer, not a wall of noise\n          if (potion) sfx("vanish", .94 + Math.random() * .12);\n          else if (hexed) { sfxGap("vanish", 110, rate * 1.05); if (i % 2 === 0) sfxGap("glint", 60, rate); }\n          else { sfx("pop", rate); if (i % 3 === 0) sfxGap("paintBurst", 140, rate * .95); }')
+
+rep('function hexIcon(m) {',
+    'function warmHexKits() {\n  const imgs = Object.values(FLAT).filter(Boolean), step = () => {\n    const im = imgs.shift();\n    if (!im) return;\n    if (im.complete && im.naturalWidth) hexKit(im); else imgs.push(im);\n    (window.requestIdleCallback || (f => setTimeout(f, 60)))(step);\n  };\n  setTimeout(step, 2500);\n}\nif (VOODOO) warmHexKits();\nfunction hexIcon(m) {')
+
+rep('  const rig = cell.ico ? rigEl(sym.name, def.label) : null;   // an animated symbol, once the rigs have loaded',
+    '  // the potion\'s colour tells its value (potionId: green, sapphire, violet, gold, blood red)\n  const rigName = def.cls === "booster" ? potionId(sym.multiplier) : sym.name;\n  const rig = cell.ico ? (rigEl(rigName, def.label) || (rigName !== sym.name ? rigEl(sym.name, def.label) : null)) : null;')
+
+rep('function fillCell(cell, sym) {',
+    '// Voodoo on Bourbon: the potion in a colour per value (tools/nola/potion_tiers.py made M2..M5\'s frames and flat icons)\nconst POTION_TIERS = [[2, "M"], [5, "M2"], [20, "M3"], [100, "M4"], [Infinity, "M5"]];\nfunction potionId(v) {\n  if (!v) return "M";\n  for (const [top, id] of POTION_TIERS) if (v <= top + 1e-9) return id;\n  return "M";\n}\nfor (const [, id] of POTION_TIERS) if (id !== "M") { const i = new Image(); i.src = `assets/flat/${id}.webp`; FLAT[id] = i; }\nfunction fillCell(cell, sym) {')
+
+rep('    else if (def.img) {   // the brick chunk; the value is painted over it\n      const im = document.createElement("img");\n      im.src = def.img; im.alt = def.label; im.draggable = false;',
+    '    else if (def.img) {   // the potion; the value is painted over it\n      const im = document.createElement("img");\n      im.src = FLAT[rigName] ? FLAT[rigName].src : def.img; im.alt = def.label; im.draggable = false;')
+
+rep('  const spirit = (m.name === "M" && FLAT.ES && hexKit(FLAT.ES)) || kit;',
+    '  const spirit = (/^M\\d?$/.test(m.name || "") && FLAT.ES && hexKit(FLAT.ES)) || kit;')
+
+rep('        const hexed = VOODOO && geo[i] && !REDUCED_MOTION, potion = hexed && geo[i].name === "M";',
+    '        const hexed = VOODOO && geo[i] && !REDUCED_MOTION, potion = hexed && /^M\\d?$/.test(geo[i].name || "");')
+
+rep('<title>Voodoo on Bourbon</title>',
+    '<title>Voodoo on Bourbon</title>\n<link rel="stylesheet" href="assets/vnum/glyphs.css">')
+
+rep('// Voodoo on Bourbon: the potion in a colour per value',
+    '// Voodoo on Bourbon: Multi values in the voodoo numerals (tools/nola/vnum.py): each character one glyph picture\nconst VGLYPH = { x: "x", ".": "dot" };\nfunction vNum(el, text) {\n  el.replaceChildren(...[...text].map(ch => { const i = document.createElement("i"); i.className = "vg g-" + (VGLYPH[ch] || ch); return i; }));\n  el.setAttribute("aria-label", text);\n}\n// Voodoo on Bourbon: the potion in a colour per value')
+
+rep('      v.className = "mv"; v.textContent = "x" + fmtMult(sym.multiplier);',
+    '      v.className = "mv"; vNum(v, "x" + fmtMult(sym.multiplier));')
+
+rep('    g.textContent = t; g.hidden = false;',
+    '    vNum(g, t); g.hidden = false;')
+
+rep('    face.textContent = "x" + fmtMult(values[vi]);',
+    '    vNum(face, "x" + fmtMult(values[vi]));')
+
+rep('<div class="fmult" id="featMult">x${fmtMult(FEATURE_VALUES[0])}</div>',
+    '<div class="fmult" id="featMult" aria-label="x${fmtMult(FEATURE_VALUES[0])}">${[..."x" + fmtMult(FEATURE_VALUES[0])].map(ch => `<i class="vg g-${VGLYPH[ch] || ch}"></i>`).join("")}</div>')
+
+rep('  caneTap: ["sfx_cane_tap", 3, 0.16],',
+    '  landBrick: ["sfx_land_brick", 3, 0.34],   // the SMUKIEZ ident: each letter landing (its own sounds, from zeqpz/slotsgame)\n  caneTap: ["sfx_cane_tap", 3, 0.16],')
+
+rep('<title>Voodoo on Bourbon</title>\n<link rel="stylesheet" href="assets/vnum/glyphs.css">',
+    '<title>Voodoo on Bourbon</title>')
+
 # ------------------------------------------------------------------ the voodoo look (appended to the stylesheet)
 CSS = '''
   /* ---- Voodoo on Bourbon (2026-11-08) ---------------------------------------------------------------
@@ -426,6 +519,62 @@ CSS = '''
     background: radial-gradient(circle, rgba(220, 255, 210, .95) 0, rgba(124, 255, 107, .7) 35%, rgba(124, 255, 107, 0) 70%);
     mix-blend-mode: screen;
   }
+
+  /* ---- owner pass 2026-11-08 ---- */
+  /* no neon glow round the Bonus button, and no pulsing glow outline round the FS / XFS tiles */
+  .bonusbtn .bglow, .bonuspanel h3 .bglow { display: none !important; }
+  .cell.scat img, .cell.scat .rigin, .cell.escat img, .cell.escat .rigin { animation: none !important; filter: none !important; }
+  /* no pink flash round the board when a spin starts (the hop stays) */
+  .board.pop::after { animation: none !important; }
+  .bspips i { width: 20px; height: 24px; }
+  .cell.scat.scatland img, .cell.scat.scatland .rigin, .cell.escat.scatland img, .cell.escat.scatland .rigin {
+    animation: scatland calc(.7s * var(--tempo, 1)) cubic-bezier(.25,.85,.35,1) !important;   /* the landing punch, no glow */
+  }
+  .cell .tglows { display: none !important; }   /* the graffiti build's neon tier glows were traced from the old icons */
+  /* the win line's runs of paint are spirit wisps now: a small green glow that rises off the thread and fades */
+  .lineLayer b {
+    width: 9px !important; height: 9px !important; margin: -4.5px 0 0 -4.5px !important; border-radius: 50%;
+    background: radial-gradient(circle, rgba(235,255,225,.95) 0, rgba(124,255,107,.75) 40%, rgba(124,255,107,0) 72%) !important;
+    filter: none !important; mix-blend-mode: screen;
+    animation: lineWisp calc(1.2s * var(--tempo, 1)) cubic-bezier(.3, .5, .4, 1) forwards !important;
+  }
+  @keyframes lineWisp {
+    0%   { transform: translate(0, 0) scale(.4); opacity: 0; }
+    25%  { opacity: 1; }
+    100% { transform: translate(calc(var(--len, 16px) * .3), calc(var(--len, 16px) * -1.8)) scale(1.3); opacity: 0; }
+  }
+  /* Multi values in voodoo numerals (vNum: one glyph picture a character) with a stitched voodoo border */
+  .vg { display: inline-block; height: 1em; background: center / contain no-repeat; vertical-align: bottom; margin: 0 -.035em; }
+  .multlayer .gmult { font-size: calc(32px * var(--shrink, 1)); text-shadow: none; }
+  .multlayer .gmult::before {
+    inset: -4% !important; -webkit-mask: none !important; mask: none !important; filter: none !important;
+    background: url("assets/vnum/border.webp") center / 100% 100% no-repeat !important;
+  }
+  .cell.booster .multface .mv {
+    font-size: 26px; padding: .42em .5em .36em; line-height: 0; text-shadow: none;
+    background: url("assets/vnum/border.webp") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6));
+  }
+  .fbox .fmult { text-shadow: none; }
+  /* the voodoo numerals, one class a glyph (tools/nola/vnum.py writes the aspect ratios) */
+  .vg.g-x { background-image: url("assets/vnum/x.webp"); aspect-ratio: 155 / 267; }
+  .vg.g-0 { background-image: url("assets/vnum/0.webp"); aspect-ratio: 162 / 269; }
+  .vg.g-1 { background-image: url("assets/vnum/1.webp"); aspect-ratio: 116 / 271; }
+  .vg.g-2 { background-image: url("assets/vnum/2.webp"); aspect-ratio: 161 / 273; }
+  .vg.g-3 { background-image: url("assets/vnum/3.webp"); aspect-ratio: 161 / 271; }
+  .vg.g-4 { background-image: url("assets/vnum/4.webp"); aspect-ratio: 172 / 267; }
+  .vg.g-5 { background-image: url("assets/vnum/5.webp"); aspect-ratio: 163 / 267; }
+  .vg.g-6 { background-image: url("assets/vnum/6.webp"); aspect-ratio: 155 / 267; }
+  .vg.g-7 { background-image: url("assets/vnum/7.webp"); aspect-ratio: 163 / 267; }
+  .vg.g-8 { background-image: url("assets/vnum/8.webp"); aspect-ratio: 169 / 267; }
+  .vg.g-9 { background-image: url("assets/vnum/9.webp"); aspect-ratio: 152 / 267; }
+  .vg.g-dot { background-image: url("assets/vnum/dot.webp"); aspect-ratio: 91 / 267; }
+  /* the glyphs are separate pictures: one centred row, not a grid row each */
+  .multlayer .gmult { display: flex !important; align-items: center; justify-content: center; }
+  .cell.booster .multface .mv { display: inline-flex !important; align-items: center; font-size: 30px; }
+  .fbox .fmult { display: inline-flex; align-items: center; }
+  .multlayer .gmult[hidden] { display: none !important; }
+  .multlayer .gmult { font-size: calc(42px * var(--shrink, 1)); }   /* the numerals fill the border's opening */
 '''
 rep("</style>\n</head>", CSS + "</style>\n</head>")
 

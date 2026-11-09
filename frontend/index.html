@@ -726,6 +726,11 @@
      The wall is the real one behind the game: the game itself is faded out beneath. */
   body.features-fade #app, body.features-fade .charfx, body.features-fade .charshadow { transition: opacity .7s ease; }
   body.features-up #app, body.features-up .charfx, body.features-up .charshadow { opacity: 0; }
+  /* and the wall's SMUKIEZ tag (its neon, drips and light with it) steps out too: the title stands
+     over the plates (owner, 2026-11-08); it fades back in with the game */
+  body.features-fade #walltag, body.features-fade .tagfx, body.features-fade #walllight { transition: opacity .7s ease, visibility .7s; }
+  body.features-up #walltag, body.features-up .tagfx { opacity: 0 !important; }
+  body.features-up #walllight { visibility: hidden; }
   .features {
     position: fixed; inset: 0; z-index: 58;
     /* never sideways: a plate's drift tilts it a degree past its box, and that alone would
@@ -814,6 +819,25 @@
   /* upright screens have the height for bigger plates (two rows): a tablet's are big enough to
      read again, a phone's still only show the icon and title */
   @media (orientation: portrait) { .fbox { width: clamp(150px, 40vw, 340px); } }
+  /* The game's title over the three plates (owner, 2026-11-08: art/ui-src/title/v2 - his real
+     SMUKIEZ tag with an "& skelly" slap sticker across its foot and Skelly peeking over it). It pops in as the plates are dealt out (fanPlates), and on a wide screen the
+     plates give up height to it so the whole screen still fits without scrolling. */
+  .features .ftitle {
+    flex: none; display: block; height: clamp(90px, 31vh, 360px); width: auto; max-width: 84vw; object-fit: contain;
+    margin-bottom: -.6vh; pointer-events: none;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .6));
+    opacity: 0;
+  }
+  .features.up .ftitle { animation: ftitleIn .8s cubic-bezier(.2, .9, .3, 1.25) .12s both; }
+  @keyframes ftitleIn {
+    0% { opacity: 0; transform: translateY(-3vh) scale(.62) rotate(-3deg); }
+    60% { opacity: 1; transform: translateY(0) scale(1.05) rotate(.6deg); }
+    100% { opacity: 1; transform: none; }
+  }
+  @media (orientation: landscape) {
+    .fbox { width: min(clamp(150px, 26vw, 340px), calc((100vh - 51vh - 48px) * 560 / 716)); }
+  }
+  @media (orientation: portrait) { .features .ftitle { height: auto; width: min(92vw, 640px); max-width: none; } }
   @container (max-width: 230px) {
     .fbox .fin { justify-content: center; }
     .fbox p { display: none; }
@@ -845,19 +869,21 @@
   }
   .features .fcont:has(.fhit:hover) { animation-play-state: paused; }
   @media (prefers-reduced-motion: reduce) {
-    .fbox, .fbox .fmult, .features .fcont { animation: none !important; }
+    .fbox, .fbox .fmult, .features .fcont, .features .ftitle { animation: none !important; }
+    .features.up .ftitle { opacity: 1; }
     .fbox, .features .fcont .ftxt { transform: none !important; }   /* flat: tiltPlates does not run either */
     .fbox::after { display: none; }
     body.features-fade #app, body.features-fade .charfx, .features { transition: none !important; }
   }
-  /* The loading screen (owner, 2026-11-03): a black-and-white studio ident. A hair of light is
-     drawn across the dark, a spark runs along it and the SMUKIEZ wordmark - his graffiti hand with a
-     brush-calligraphy edge (art/ui-src/intro_wordmark) - is painted on behind the spark like a
-     brush stroke, half see-through, like light; it lands with a small punch, a bloom and its glow
-     coming up, a sheen passes along the strokes; then it holds, the glow breathing, while the
-     loading bar at the foot fills. Faint film grain and a vignette over all of it. runIntro()
-     starts it (.go) once the wordmark and the few sounds are ready, and ends it (.out) by lifting
-     the word away. --iw is the wordmark's width; its strokes fill .88 of it. */
+  /* The loading screen: a black-and-white studio ident (owner, 2026-11-08: an old arcade ident's
+     drop-and-bounce, replacing the 11-03 line of light). The SMUKIEZ wordmark - his graffiti hand
+     with a brush-calligraphy edge (art/ui-src/intro_wordmark) - cut into its letters
+     (art/ui-src/intro_letters): one after another they drop out of the dark and land with a
+     squash and a bounce or two (runIntro), the swash sweeps in under them, the seal stamps on, the
+     glow comes up and a small trademark line rolls up underneath; then it holds while the loading
+     bar at the foot fills. Faint film grain and a vignette over all of it. runIntro() starts it
+     (.go) once the letters and the few sounds are ready, and ends it (.out) by lifting the word
+     away. --iw is the wordmark's width; its strokes fill .88 of it. */
   .intro { --iw: min(88vw, 1080px, 110vh); }
   .intro::before {   /* the vignette */
     content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 2;
@@ -873,81 +899,32 @@
     position: relative; z-index: 1; display: flex; align-items: center; justify-content: center;
     width: 100%; height: 44vh; margin-top: -6vh;
   }
-  /* the hair of light, and the spark running along it */
-  .introline {
-    position: absolute; left: 50%; top: 50%; width: calc(var(--iw) * .9); height: 2px; translate: -50% -50%;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 20%, #fff 80%, rgba(255, 255, 255, 0));
-    box-shadow: 0 0 10px rgba(255, 255, 255, .75), 0 0 28px rgba(255, 255, 255, .3);
-    opacity: 0; transform: scaleX(0);
-  }
-  .intro.go .introline { animation: introLine 1.75s cubic-bezier(.2, .7, .2, 1) .15s both; }
-  @keyframes introLine {
-    0%   { opacity: 0; transform: scaleX(0); }
-    10%  { opacity: 1; }
-    42%  { opacity: 1; transform: scaleX(1); }
-    76%  { opacity: .45; transform: scaleX(1.06) scaleY(.6); }
-    100% { opacity: 0; transform: scaleX(1.14) scaleY(.3); }
-  }
-  .introspark {
-    position: absolute; left: 50%; top: 50%; z-index: 2; width: 140px; height: 28px; margin: -14px 0 0 -70px;
-    background: radial-gradient(ellipse at center, #fff 0%, rgba(255, 255, 255, .7) 18%, rgba(255, 255, 255, 0) 62%);
-    opacity: 0;
-  }
-  .intro.go .introspark { animation: introSpark .84s cubic-bezier(.5, 0, .3, 1) .58s both; }
-  @keyframes introSpark {
-    0%   { opacity: 0; transform: translateX(calc(var(--iw) * -.45)) scaleX(.6); }
-    12%  { opacity: 1; }
-    88%  { opacity: 1; }
-    100% { opacity: 0; transform: translateX(calc(var(--iw) * .45)) scaleX(1.4); }
-  }
   /* the wordmark: its strokes, its glow under them, and a sheen masked to the strokes over them */
   .introword { position: relative; width: var(--iw); aspect-ratio: 2736 / 1160; }
   .introword > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; user-select: none; }
   .introword .iwglow { opacity: 0; }
-  .introword .iwink {
-    opacity: 0;
-    /* painted on left to right behind the spark: a soft-edged mask wiped across */
-    -webkit-mask-image: linear-gradient(90deg, #000 47%, transparent 53%); mask-image: linear-gradient(90deg, #000 47%, transparent 53%);
-    -webkit-mask-size: 300% 100%; mask-size: 300% 100%;
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-    -webkit-mask-position: 78% 0; mask-position: 78% 0;
-  }
-  .intro.go .introword .iwink { animation: introWipe .84s cubic-bezier(.5, 0, .3, 1) .58s both; }
-  @keyframes introWipe {
-    0%   { opacity: 0; -webkit-mask-position: 78% 0; mask-position: 78% 0; filter: blur(5px); }
-    12%  { opacity: .84; }
-    100% { opacity: .84; -webkit-mask-position: 22% 0; mask-position: 22% 0; filter: blur(0); }
-  }
-  .intro.go .introword .iwglow { animation: introGlow 1.2s ease-out 1.42s both, introGlowBreathe 3.2s ease-in-out 2.62s infinite alternate; }
+  /* the letters (built by runIntro from INTRO_PIECES), each at its own place on the wordmark, and
+     the trademark: a TM by the arrow and a line under the word that rolls up into view */
+  .introword .iwl { position: absolute; display: block; transform-origin: 50% 100%; opacity: 0; will-change: transform; }
+  .introword .iwl.flat { opacity: 1; }
+  .intro.go .introword .iwglow.up { animation: introGlow 1.2s ease-out both, introGlowBreathe 3.2s ease-in-out 1.2s infinite alternate; }
   @keyframes introGlow { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: .55; } }
   @keyframes introGlowBreathe { from { opacity: .55; } to { opacity: .78; } }
-  /* the landing: a small punch, then a slow breath while the game loads */
-  .intro.go .introword {
-    animation: introPunch .7s cubic-bezier(.2, .9, .3, 1) 1.44s both, introHold 5s ease-in-out 2.2s infinite alternate;
+  .introtm {
+    position: absolute; left: 0; right: 0; top: calc(50% + var(--iw) * .21); z-index: 1; overflow: hidden;
+    display: flex; justify-content: center; pointer-events: none;
   }
-  @keyframes introPunch { 0% { transform: scale(1); } 22% { transform: scale(1.05); } 100% { transform: scale(1); } }
-  @keyframes introHold { from { transform: scale(1); } to { transform: scale(1.02); } }
-  /* the sheen: a band of light passing along the strokes (masked to them) */
-  .introword .iwsheen {
-    position: absolute; inset: 0; overflow: hidden; opacity: 0;
-    -webkit-mask: url("assets/intro_wordmark.webp") center / 100% 100% no-repeat; mask: url("assets/intro_wordmark.webp") center / 100% 100% no-repeat;
+  .introtm span {
+    display: block; padding: .2em 0 .3em; transform: translateY(120%);
+    font: 600 clamp(9px, calc(var(--iw) * .016), 15px)/1.2 var(--plain); letter-spacing: .34em; text-transform: uppercase; color: #a9a9a9;
   }
-  .introword .iwsheen > b {
-    position: absolute; top: 0; bottom: 0; left: 0; width: 26%;
-    background: linear-gradient(100deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .95) 50%, rgba(255, 255, 255, 0));
-    transform: translateX(-120%);
-  }
-  .intro.go .introword .iwsheen { animation: introSheenOn 1.1s linear 1.95s both; }
-  .intro.go .introword .iwsheen > b { animation: introSheen 1.1s cubic-bezier(.45, 0, .25, 1) 1.95s both; }
-  @keyframes introSheenOn { 0%, 100% { opacity: 1; } }
-  @keyframes introSheen { from { transform: translateX(-120%); } to { transform: translateX(400%); } }
   /* the bloom as it lands */
   .introflash {
     position: absolute; left: 50%; top: 50%; width: min(90vw, 1100px); height: 46vh; translate: -50% -50%;
     background: radial-gradient(ellipse at center, rgba(255, 255, 255, .5) 0%, rgba(255, 255, 255, .12) 34%, rgba(255, 255, 255, 0) 66%);
     opacity: 0; pointer-events: none;
   }
-  .intro.go .introflash { animation: introFlash .9s cubic-bezier(.2, .7, .3, 1) 1.42s both; }
+  .introflash.on { animation: introFlash .9s cubic-bezier(.2, .7, .3, 1) both; }
   @keyframes introFlash { 0% { opacity: 0; transform: scale(.6); } 18% { opacity: 1; } 100% { opacity: 0; transform: scale(1.3); } }
   /* the foot: the loading bar, a hair of white that fills as the game's pieces arrive, and the
      disclosure under it in small type, where it can be read and ignored */
@@ -976,7 +953,8 @@
   @keyframes introExit { from { opacity: 1; transform: none; filter: blur(0); } to { opacity: 0; transform: scale(1.14); filter: blur(6px); } }
   @keyframes introFootOut { from { opacity: 1; } to { opacity: 0; } }
   /* no motion: the wordmark, its glow and the bar, simply there */
-  .intro.static .introword .iwink { opacity: .84; -webkit-mask: none; mask: none; }
+  .intro.static .introword .iwl { opacity: 1; }
+  .intro.static .introtm span { transform: none; }
   .intro.static .introword .iwglow { opacity: .55; }
   .intro.static .introfoot { opacity: 1; }
   /* Short screens (the 400x225 popout, a phone on its side): the three plates stand in one
@@ -985,7 +963,8 @@
   @media (max-height: 520px) {
     .features { padding: 2.5vh 3vw; gap: 1.5vh; overflow: hidden; justify-content: center; }
     .fboxes { flex-wrap: nowrap; gap: 1.8vw; }
-    .fbox { width: min(30vw, calc((100vh - 15vh - 44px) * 560 / 716)); }
+    .fbox { width: min(30vw, calc((100vh - 15vh - 44px - 21vh) * 560 / 716)); }
+    .features .ftitle { height: 19vh; margin-bottom: 0; }
     .features .fcont { position: static; font-size: clamp(11px, 4.2vh, 20px); }
     .features .fcont .fhit { padding: .35em 1.2em; }
     .intro { padding: 3vh 6vw; }
@@ -1449,9 +1428,9 @@
      Leader's or Phantom's glow reaches ~20px past the reel, and clipping it at the edge cut
      every glowing scatter into a hard-edged box for the length of each cascade. A falling
      tile shows for a frame or two in that 24px before it is "in"; the glow never gets cut. */
-  .reel.spinning { clip-path: inset(0 -60px); }   /* the spin strip stays tight top and bottom */
+  .reel.spinning { clip-path: inset(-20px -60px); }   /* Voodoo on Bourbon: the strip runs on to the iron frame's inner edge (18px out) and just under it */
   .reel.spinning > .cell { visibility: hidden; }  /* result stays hidden until the overlay lands */
-  .reel.tumbling { clip-path: inset(-24px -60px); }
+  .reel.tumbling { clip-path: inset(-20px -60px); }   /* the same line as the spin: tiles show until they pass under the iron */
   /* the near-miss column: the same rounded corner the multiplier boxes carry */
   .reel.antic {
     border-color: var(--gold); border-radius: 14px;
@@ -3113,7 +3092,8 @@
   .bshop #bonusBetDown:disabled, .bshop #bonusBetUp:disabled { opacity: .3; cursor: default; }
   .bshop #bonusBetDown::before, .bshop #bonusBetUp::before { content: none; }
   :root {
-    --drip: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'><path d='M10 1C10 1 3 10 3 15a7 7 0 0 0 14 0C17 10 10 1 10 1z'/></svg>");
+    /* the volatility pips: simple voodoo skulls (cranium, jaw, two eyes and a nose cut out) - was a paint drip */
+    --drip: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'><path fill-rule='evenodd' d='M10 1.5C5 1.5 2 5 2 9.4c0 2.6 1.2 4.6 3 5.8V18c0 .8.6 1.4 1.4 1.4H7v2.1c0 .6.4 1 1 1s1-.4 1-1v-2.1h2v2.1c0 .6.4 1 1 1s1-.4 1-1v-2.1h.6c.8 0 1.4-.6 1.4-1.4v-2.8c1.8-1.2 3-3.2 3-5.8C18 5 15 1.5 10 1.5zM6.9 8.1a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2zm6.2 0a2.1 2.1 0 1 0 0 4.2 2.1 2.1 0 0 0 0-4.2zM10 12.6l-1.3 2.3h2.6z'/></svg>");
     --chev: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M5 9l7 7 7-7'/></svg>");
   }
   /* Bonus Boost (bet mode "boost"): a switch, not a buy. Its banner is the "1.6x" mark itself, sprayed
@@ -3223,6 +3203,62 @@
     background: radial-gradient(circle, rgba(220, 255, 210, .95) 0, rgba(124, 255, 107, .7) 35%, rgba(124, 255, 107, 0) 70%);
     mix-blend-mode: screen;
   }
+
+  /* ---- owner pass 2026-11-08 ---- */
+  /* no neon glow round the Bonus button, and no pulsing glow outline round the FS / XFS tiles */
+  .bonusbtn .bglow, .bonuspanel h3 .bglow { display: none !important; }
+  .cell.scat img, .cell.scat .rigin, .cell.escat img, .cell.escat .rigin { animation: none !important; filter: none !important; }
+  /* no pink flash round the board when a spin starts (the hop stays) */
+  .board.pop::after { animation: none !important; }
+  .bspips i { width: 20px; height: 24px; }
+  .cell.scat.scatland img, .cell.scat.scatland .rigin, .cell.escat.scatland img, .cell.escat.scatland .rigin {
+    animation: scatland calc(.7s * var(--tempo, 1)) cubic-bezier(.25,.85,.35,1) !important;   /* the landing punch, no glow */
+  }
+  .cell .tglows { display: none !important; }   /* the graffiti build's neon tier glows were traced from the old icons */
+  /* the win line's runs of paint are spirit wisps now: a small green glow that rises off the thread and fades */
+  .lineLayer b {
+    width: 9px !important; height: 9px !important; margin: -4.5px 0 0 -4.5px !important; border-radius: 50%;
+    background: radial-gradient(circle, rgba(235,255,225,.95) 0, rgba(124,255,107,.75) 40%, rgba(124,255,107,0) 72%) !important;
+    filter: none !important; mix-blend-mode: screen;
+    animation: lineWisp calc(1.2s * var(--tempo, 1)) cubic-bezier(.3, .5, .4, 1) forwards !important;
+  }
+  @keyframes lineWisp {
+    0%   { transform: translate(0, 0) scale(.4); opacity: 0; }
+    25%  { opacity: 1; }
+    100% { transform: translate(calc(var(--len, 16px) * .3), calc(var(--len, 16px) * -1.8)) scale(1.3); opacity: 0; }
+  }
+  /* Multi values in voodoo numerals (vNum: one glyph picture a character) with a stitched voodoo border */
+  .vg { display: inline-block; height: 1em; background: center / contain no-repeat; vertical-align: bottom; margin: 0 -.035em; }
+  .multlayer .gmult { font-size: calc(32px * var(--shrink, 1)); text-shadow: none; }
+  .multlayer .gmult::before {
+    inset: -4% !important; -webkit-mask: none !important; mask: none !important; filter: none !important;
+    background: url("assets/vnum/border.webp") center / 100% 100% no-repeat !important;
+  }
+  .cell.booster .multface .mv {
+    font-size: 26px; padding: .42em .5em .36em; line-height: 0; text-shadow: none;
+    background: url("assets/vnum/border.webp") center / 100% 100% no-repeat;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6));
+  }
+  .fbox .fmult { text-shadow: none; }
+  /* the voodoo numerals, one class a glyph (tools/nola/vnum.py writes the aspect ratios) */
+  .vg.g-x { background-image: url("assets/vnum/x.webp"); aspect-ratio: 155 / 267; }
+  .vg.g-0 { background-image: url("assets/vnum/0.webp"); aspect-ratio: 162 / 269; }
+  .vg.g-1 { background-image: url("assets/vnum/1.webp"); aspect-ratio: 116 / 271; }
+  .vg.g-2 { background-image: url("assets/vnum/2.webp"); aspect-ratio: 161 / 273; }
+  .vg.g-3 { background-image: url("assets/vnum/3.webp"); aspect-ratio: 161 / 271; }
+  .vg.g-4 { background-image: url("assets/vnum/4.webp"); aspect-ratio: 172 / 267; }
+  .vg.g-5 { background-image: url("assets/vnum/5.webp"); aspect-ratio: 163 / 267; }
+  .vg.g-6 { background-image: url("assets/vnum/6.webp"); aspect-ratio: 155 / 267; }
+  .vg.g-7 { background-image: url("assets/vnum/7.webp"); aspect-ratio: 163 / 267; }
+  .vg.g-8 { background-image: url("assets/vnum/8.webp"); aspect-ratio: 169 / 267; }
+  .vg.g-9 { background-image: url("assets/vnum/9.webp"); aspect-ratio: 152 / 267; }
+  .vg.g-dot { background-image: url("assets/vnum/dot.webp"); aspect-ratio: 91 / 267; }
+  /* the glyphs are separate pictures: one centred row, not a grid row each */
+  .multlayer .gmult { display: flex !important; align-items: center; justify-content: center; }
+  .cell.booster .multface .mv { display: inline-flex !important; align-items: center; font-size: 30px; }
+  .fbox .fmult { display: inline-flex; align-items: center; }
+  .multlayer .gmult[hidden] { display: none !important; }
+  .multlayer .gmult { font-size: calc(42px * var(--shrink, 1)); }   /* the numerals fill the border's opening */
 </style>
 </head>
 <body>
@@ -3337,13 +3373,10 @@
   <!-- the studio ident (runIntro): a line of light, SMUKIEZ resolving out of it, the loading bar -->
   <div class="introstage">
     <i class="introflash" aria-hidden="true"></i>
-    <i class="introline" aria-hidden="true"></i>
-    <i class="introspark" aria-hidden="true"></i>
-    <div class="introword" id="introWord" role="img" aria-label="Voodoo on Bourbon">
-      <img class="iwglow" src="assets/intro_wordmark_glow.webp" alt="" draggable="false">
-      <img class="iwink" src="assets/intro_wordmark.webp" alt="" draggable="false">
-      <i class="iwsheen" aria-hidden="true"><b></b></i>
+    <div class="introword" id="introWord" role="img" aria-label="Smukiez">
+      <img class="iwglow" src="assets/intro_letters/glow.webp" alt="" draggable="false">
     </div>
+    <div class="introtm" aria-hidden="true"><span>&copy; 2026 Smukiez &middot; All rights reserved</span></div>
   </div>
   <div class="introfoot">
     <div class="introbar" id="introBar"><i class="introfill" id="introFill"></i></div>
@@ -3680,24 +3713,40 @@ function tierGlow(name) {
   }));
   return box;
 }
+// Voodoo on Bourbon: Multi values in the voodoo numerals (tools/nola/vnum.py): each character one glyph picture
+const VGLYPH = { x: "x", ".": "dot" };
+function vNum(el, text) {
+  el.replaceChildren(...[...text].map(ch => { const i = document.createElement("i"); i.className = "vg g-" + (VGLYPH[ch] || ch); return i; }));
+  el.setAttribute("aria-label", text);
+}
+// Voodoo on Bourbon: the potion in a colour per value (tools/nola/potion_tiers.py made M2..M5's frames and flat icons)
+const POTION_TIERS = [[2, "M"], [5, "M2"], [20, "M3"], [100, "M4"], [Infinity, "M5"]];
+function potionId(v) {
+  if (!v) return "M";
+  for (const [top, id] of POTION_TIERS) if (v <= top + 1e-9) return id;
+  return "M";
+}
+for (const [, id] of POTION_TIERS) if (id !== "M") { const i = new Image(); i.src = `assets/flat/${id}.webp`; FLAT[id] = i; }
 function fillCell(cell, sym) {
   const def = SYM[sym.name] || { label: sym.name, sub: "", cls: "low" };
   const el = cell.ico || cell;   // a board cell fills its lasting icon box
   el.replaceChildren();
-  const rig = cell.ico ? rigEl(sym.name, def.label) : null;   // an animated symbol, once the rigs have loaded
+  // the potion's colour tells its value (potionId: green, sapphire, violet, gold, blood red)
+  const rigName = def.cls === "booster" ? potionId(sym.multiplier) : sym.name;
+  const rig = cell.ico ? (rigEl(rigName, def.label) || (rigName !== sym.name ? rigEl(sym.name, def.label) : null)) : null;
   // the Multi shows its value as the tile itself - that number is what the player cares about
   if (def.cls === "booster") {
     if (rig) el.append(rig);
-    else if (def.img) {   // the brick chunk; the value is painted over it
+    else if (def.img) {   // the potion; the value is painted over it
       const im = document.createElement("img");
-      im.src = def.img; im.alt = def.label; im.draggable = false;
+      im.src = FLAT[rigName] ? FLAT[rigName].src : def.img; im.alt = def.label; im.draggable = false;
       el.append(im);
     }
     const m = document.createElement("div");
     m.className = "multface";
     if (sym.multiplier) {
       const v = document.createElement("span");
-      v.className = "mv"; v.textContent = "x" + fmtMult(sym.multiplier);
+      v.className = "mv"; vNum(v, "x" + fmtMult(sym.multiplier));
       m.append(v);
       m.style.setProperty("--heat", heatColour(sym.multiplier));
       m._mult = sym.multiplier;
@@ -4079,7 +4128,7 @@ let sprayReady = null;
 // Fetches and decodes the can and the puff in every value's colour (two dozen small pictures,
 // decoded off the main thread) and holds them, so a can is whole on its first frame on the
 // board. Idempotent; a picture that will not load leaves its colour to the nearest one there is.
-const VOODOO = true;   // Voodoo on Bourbon: Multi values condense out of spirit smoke (voodooReveal), no spray can
+const VOODOO = true, VOODOO_NO_GLITCH = true;   // Voodoo on Bourbon: Multi values condense out of spirit smoke (voodooReveal), no spray can
 function prepareSpray() {
   if (sprayReady) return sprayReady;
   if (VOODOO) return (sprayReady = Promise.resolve(false));
@@ -4383,7 +4432,7 @@ function paintCell(r, y) {
   if (v > 0) {
     clearTimeout(g.fadeTimer); g.classList.remove("gone");   // a value arriving mid-fade keeps the slot
     const t = "x" + fmtMult(v);
-    g.textContent = t; g.hidden = false;
+    vNum(g, t); g.hidden = false;
     // the face fills the cell and shrinks with the value's length (a fraction of the rule's
     // own font size, see .multlayer .gmult) so a stacked x1001.25 never runs past it
     g.style.setProperty("--shrink", t.length > 7 ? ".46" : t.length > 5 ? ".56" : t.length > 3 ? ".72" : "1");
@@ -4639,9 +4688,9 @@ function burstMeasure(r, y, sym) {
 // faint green ghost of the voodoo skull - rises out of it, green smoke curls up on a spiral and motes of
 // green and violet drift away. Same canvas and clock as the bursts, so it costs a few drawImage calls a frame.
 const HEX_STEPS = 16, HEX_PX = 220, HEX_MS = 900;
-let hexKitCache = null;
+const hexKits = new Map();   // one dissolve (and green ghost) per symbol picture, cut on first use or while idle
 function hexKit(img) {
-  if (hexKitCache && hexKitCache.img === img) return hexKitCache;
+  if (img && hexKits.has(img.src)) return hexKits.get(img.src);
   if (!img || !img.naturalWidth) return null;
   const S = HEX_PX, ar = img.naturalHeight / img.naturalWidth, w = S, h = Math.round(S * ar);
   const base = document.createElement("canvas"); base.width = w; base.height = h;
@@ -4676,14 +4725,34 @@ function hexKit(img) {
     cx.putImageData(out, 0, 0);
     frames.push(c);
   }
-  return (hexKitCache = { img, frames, w, h });
+  // the icon's ghost: its own silhouette washed in ectoplasm green, faintly showing its drawing through
+  const ghost = document.createElement("canvas"); ghost.width = w; ghost.height = h;
+  const gx = ghost.getContext("2d");
+  gx.drawImage(img, 0, 0, w, h);
+  gx.globalCompositeOperation = "source-atop";
+  gx.fillStyle = "rgba(150, 255, 130, .78)"; gx.fillRect(0, 0, w, h);
+  const kit = { img, frames, w, h, ghost };
+  hexKits.set(img.src, kit);
+  return kit;
 }
+function warmHexKits() {
+  const imgs = Object.values(FLAT).filter(Boolean), step = () => {
+    const im = imgs.shift();
+    if (!im) return;
+    if (im.complete && im.naturalWidth) hexKit(im); else imgs.push(im);
+    (window.requestIdleCallback || (f => setTimeout(f, 60)))(step);
+  };
+  setTimeout(step, 2500);
+}
+if (VOODOO) warmHexKits();
 function hexIcon(m) {
   const { pic, img, c, drawW } = m, t = tempo(), now = performance.now();
   const kit = hexKit(img);
   if (!kit) return false;
   const W = c.w, rnd = (a, b) => a + Math.random() * (b - a);
-  bursts.push({ hex: true, from: now, born: now, t, x: c.x, y: c.y, W, kit, drawW, glow: glowSprite("#7CFF6B"),
+  // its spirit: the potion gives up the voodoo skull's ghost; every other icon its own
+  const spirit = (/^M\d?$/.test(m.name || "") && FLAT.ES && hexKit(FLAT.ES)) || kit;
+  bursts.push({ hex: true, from: now, born: now, t, x: c.x, y: c.y, W, kit, drawW, ghost: spirit.ghost, glow: glowSprite("#7CFF6B"),
     vglow: glowSprite("#9B5CF0"), turn: rnd(-1, 1),
     wisps: [0, 1, 2, 3].map(i => ({ a: i / 4 * 6.28 + rnd(0, 1), r: W * rnd(.12, .26), sp: rnd(.004, .007) * (i % 2 ? 1 : -1), s: rnd(.5, .8) })),
     motes: Array.from({ length: bursts.length > 8 ? 6 : 14 }, () => ({ a: rnd(0, 6.28), r: W * rnd(.1, .4), up: W * rnd(.5, 1.1),
@@ -4723,11 +4792,11 @@ function drawHexLight(ctx, b, now) {
   if (age < 300) { const q = age / 300, s = b.W * (1 + .7 * q); ctx.globalAlpha = .55 * (1 - q); ctx.drawImage(b.glow, b.x - s / 2, b.y - s / 2, s, s); }
   const vs = b.W * (1.1 + .5 * e); ctx.globalAlpha = .35 * Math.sin(Math.PI * p);
   ctx.drawImage(b.vglow, b.x - vs / 2, b.y - vs / 2 - b.W * .2 * e, vs, vs);
-  // the spirit: a ghost of the voodoo skull rising out of the potion, faint and green
-  const ghost = FLAT.ES;
-  if (ghost && ghost.naturalWidth && age > 160) {
-    const q = Math.min(1, (age - 160) / (HEX_MS - 160)), gs = b.W * (.55 + .25 * q);
-    ctx.globalAlpha = .45 * Math.sin(Math.PI * q);
+  // the spirit: the icon's green ghost (the potion's is the voodoo skull) rising out of it, swaying as it goes
+  const ghost = b.ghost;
+  if (ghost && age > 120) {
+    const q = Math.min(1, (age - 120) / (HEX_MS - 120)), gs = b.W * (.62 + .3 * q);
+    ctx.globalAlpha = .55 * Math.sin(Math.PI * q);
     ctx.drawImage(ghost, b.x - gs / 2 + Math.sin(q * 6) * b.W * .04, b.y - gs / 2 - b.W * (.1 + .75 * q), gs, gs);
   }
   // motes: green and violet sparks drifting up on little helices
@@ -4741,7 +4810,8 @@ function drawHexLight(ctx, b, now) {
 }
 function burstIcon(m) {
   if (!m) return;
-  if (VOODOO && m.name === "M" && !REDUCED_MOTION && hexIcon(m)) return;
+  // Voodoo on Bourbon: no icon pops or shatters - every one is hexed into its ghost and green mist (owner, 2026-11-08)
+  if (VOODOO && !REDUCED_MOTION && hexIcon(m)) return;
   const { pic, name, img, c, drawW } = m, t = tempo(), now = performance.now();
   const kit = burstKit(name || "?", img), col = BURST_COLOUR[name] || "#ffffff";
   // it heats up while it strains (drawn from now on), and blows at the top of the strain
@@ -5739,6 +5809,8 @@ const SYM_SFX = {
 const SYM_SFX_VOL = {};
 for (const [id, url] of Object.entries(SYM_SFX)) if (url) { SFX["sym_" + id] = url; SFX_VOL["sym_" + id] = SYM_SFX_VOL[id] ?? .55; }
 const bustMemo = { last: null };
+const BUST_CHANCE = .25, BUST_GAP = 45000;
+let bustAt = -Infinity;
 // The street foley pass (2026-11-03): each name is a set of takes, sfx_<stem>_1..n.wav (+ Opus
 // copies), cleaned and loudness-matched to the set above. sfx(name) plays one of them - never the
 // same take twice running - a hair off pitch, so a run of them never sounds like a loop.
@@ -5782,6 +5854,7 @@ const SFX_SETS = {
   // Voodoo on Bourbon (tools/sfx/nola_spec.py): the hexed Multi, Doc's foley, what each symbol lands like
   vanish: ["sfx_vanish", 3, 0.42],   // a potion hexed away (no pop)
   reveal: ["sfx_reveal", 2, 0.36],   // a Multi's value conjured out of smoke
+  landBrick: ["sfx_land_brick", 3, 0.34],   // the SMUKIEZ ident: each letter landing (its own sounds, from zeqpz/slotsgame)
   caneTap: ["sfx_cane_tap", 3, 0.16],   // Doc's cane tapping
   magicPoof: ["sfx_magic_poof", 2, 0.16],   // Doc conjuring a wisp
   hatSwish: ["sfx_hat_swish", 2, 0.12],   // Doc tipping his hat
@@ -6306,9 +6379,12 @@ const handlers = {
         const rate = .8 + Math.random() * .55 + i * .01;
         // a wet paint pop layered under every third one, never closer than 140 ms, so a big
         // cluster's run of pops is not doubled into noise
-        const hexed = VOODOO && geo[i] && geo[i].name === "M";
+        const hexed = VOODOO && geo[i] && !REDUCED_MOTION, potion = hexed && /^M\d?$/.test(geo[i].name || "");
         setTimeout(() => {
-          if (hexed) sfx("vanish", .94 + Math.random() * .12);   // the potion is hexed away: a ghostly whoosh, no pop
+          // hexed away: the potion with its full ghostly whoosh, the rest with the same whoosh thinned out (never
+          // closer than 110 ms) and a soft glassy ting each, so a big cluster is a shimmer, not a wall of noise
+          if (potion) sfx("vanish", .94 + Math.random() * .12);
+          else if (hexed) { sfxGap("vanish", 110, rate * 1.05); if (i % 2 === 0) sfxGap("glint", 60, rate); }
           else { sfx("pop", rate); if (i % 3 === 0) sfxGap("paintBurst", 140, rate * .95); }
           multEls[r][y].classList.add("bare");
         }, hexed ? 0 : BURST_AT * tempo());
@@ -6594,19 +6670,21 @@ function lineSprites() {
   };
   const core = make(LINE_CORE + 3, (g, h) => {   // the solid paint, its edge softened
     const cg = g.createRadialGradient(h, h, 0, h, h, h);
-    cg.addColorStop(0, "rgba(255,255,255,1)"); cg.addColorStop(.6, "rgba(255,255,255,1)"); cg.addColorStop(1, "rgba(255,255,255,0)");
+    // Voodoo on Bourbon: a spirit thread, not paint - a white-hot core going ectoplasm green at its edge
+    cg.addColorStop(0, "rgba(245,255,235,1)"); cg.addColorStop(.45, "rgba(190,255,160,1)"); cg.addColorStop(1, "rgba(124,255,107,0)");
     g.fillStyle = cg; g.fillRect(0, 0, h * 2, h * 2);
   });
   const specks = [0, 1, 2, 3, 4, 5].map(() => make(22, (g, h) => {   // the overspray: fine dots, fewer further out
     for (let i = 0; i < 11; i++) {
       const a = Math.random() * Math.PI * 2, r = LINE_CORE * .4 + Math.pow(Math.random(), 1.4) * 8.5;
-      g.fillStyle = `rgba(255,255,255,${(.22 + Math.random() * .45).toFixed(2)})`;
+      g.fillStyle = Math.random() < .3 ? `rgba(196,140,255,${(.3 + Math.random() * .5).toFixed(2)})`   // magic motes: green, some violet
+                                       : `rgba(160,255,140,${(.3 + Math.random() * .5).toFixed(2)})`;
       g.beginPath(); g.arc(h + Math.cos(a) * r, h + Math.sin(a) * r, .35 + Math.random() * .55, 0, Math.PI * 2); g.fill();
     }
   }));
   const under = make(30, (g, h) => {   // the soft dark under-glow
     const ug = g.createRadialGradient(h, h, 0, h, h, h);
-    ug.addColorStop(0, "rgba(10,6,16,.075)"); ug.addColorStop(.5, "rgba(10,6,16,.035)"); ug.addColorStop(1, "rgba(10,6,16,0)");
+    ug.addColorStop(0, "rgba(124,255,107,.16)"); ug.addColorStop(.5, "rgba(124,255,107,.06)"); ug.addColorStop(1, "rgba(124,255,107,0)");   // a green aura
     g.fillStyle = ug; g.fillRect(0, 0, h * 2, h * 2);
   });
   return lineDabs = { core, specks, under };
@@ -7015,7 +7093,12 @@ async function presentRound(round, { settle = true } = {}) {
     // a bonus was actually on the table - a near miss above, or a bonus that failed to clear
     // its own cost in freeSpinEnd. Multis that went off with nothing to multiply are their
     // own small tragedy, though: that gets the bust.
-    if (state.multiTotal > 0) sfx(pickSfx(["bustA", "bustB"], bustMemo));
+    // Voodoo on Bourbon: the sad trombone only once in a while (owner, 2026-11-08) - about one missed round in
+    // four, and never within 45 s of the last one
+    if (state.multiTotal > 0 && Math.random() < BUST_CHANCE && performance.now() - bustAt > BUST_GAP) {
+      bustAt = performance.now();
+      sfx(pickSfx(["bustA", "bustB"], bustMemo));
+    }
     tick("No win — run it back.");
   }
 }
@@ -8589,7 +8672,13 @@ function startIntroIcons(canvas, avoid) {
 // silently where it does not, then holds while the loading bar fills. Loading is what ends the
 // screen (never sooner than the ident has played): pressing through it would only put the player
 // into a game whose pieces have not arrived.
-const INTRO_SFX = ["introRise", "introWhoosh", "introHit", "introShimmer", "introOut"];
+const INTRO_SFX = ["introWhoosh", "introHit", "introShimmer", "introOut", "landBrick"];
+// the wordmark's pieces - each letter, the swoosh and the TM generated on its own and laid out as one
+// word (art/ui-src/intro_letters_v2: gen.py, build.py -> assets/intro_letters/pieces.json; the seal is
+// the old wordmark's):
+// [x, y, w, h] on the 2736x1160 wordmark, the letters in the order they drop
+const INTRO_SIZE = [2736, 1160], INTRO_PIECES = {"S":[26,302,401,549],"M":[380,282,499,533],"U":[841,321,412,509],"K":[1220,246,358,532],"i":[1531,431,103,355],"E":[1606,306,424,515],"Z":[1993,220,567,622],"swash":[420,705,2180,360],"tm":[2578,230,144,94],"seal":[2481,950,139,140],"glow":[-110,-110,2956,1380]};
+const INTRO_DROP = ["S", "M", "U", "K", "i", "E", "Z"];
 function runIntro() {
   const wrap = $("intro"), fill = $("introFill");
   if (!wrap) return;
@@ -8601,7 +8690,22 @@ function runIntro() {
   // a beat's sound, only into audio that is actually running: a clip started into a suspended
   // context would sound late, all at once, on the player's first press
   const play = (name, rate = 1) => { if (actx && actx.state === "running") sfx(name, rate); };
-  const IDENT = 2900;   // ms the ident needs before it may hand over
+  const IDENT = 3300;   // ms the ident needs before it may hand over
+  // the letters, laid on the wordmark's box where each one sits in it
+  const word = $("introWord"), pieceEl = {};
+  const at = (el, [x, y, w, h]) => Object.assign(el.style, { left: (x / INTRO_SIZE[0] * 100) + "%", top: (y / INTRO_SIZE[1] * 100) + "%",
+                                                           width: (w / INTRO_SIZE[0] * 100) + "%", height: (h / INTRO_SIZE[1] * 100) + "%" });
+  // the glow is on a canvas padded well past the word on every side (so it fades out before any edge)
+  if (word && INTRO_PIECES.glow) at(word.querySelector(".iwglow"), INTRO_PIECES.glow);
+  if (word) for (const [k, [x, y, w, h]] of Object.entries(INTRO_PIECES)) {
+    if (k === "glow") continue;
+    const im = new Image();
+    im.className = "iwl"; im.alt = ""; im.draggable = false; im.src = `assets/intro_letters/${k}.webp`;
+    Object.assign(im.style, { left: (x / INTRO_SIZE[0] * 100) + "%", top: (y / INTRO_SIZE[1] * 100) + "%",
+                              width: (w / INTRO_SIZE[0] * 100) + "%", height: (h / INTRO_SIZE[1] * 100) + "%" });
+    word.appendChild(im);
+    pieceEl[k] = im;
+  }
   let beganAt = performance.now();
   const finish = () => {
     if (done) return;
@@ -8616,7 +8720,7 @@ function runIntro() {
   const loaded = preloadAll(p => { if (fill) fill.style.width = (p * 100).toFixed(1) + "%"; });
   loaded.then(() => { if (fill) fill.style.width = "100%"; warmBursts(); makeSmears(); });
   if (REDUCED_MOTION) {
-    wrap.classList.add("static");
+    wrap.classList.add("static");   // (the word, its trademark and the bar, simply there)
     loaded.then(() => after(600, finish));
   } else {
     // film grain: a tile of noise made once, shuffled about by the stylesheet
@@ -8639,15 +8743,71 @@ function runIntro() {
       if (done) return;
       beganAt = performance.now();
       wrap.classList.add("go");
-      // the rise (1.62 s, ending on its peak) starts with the ident and runs a touch fast so its peak is the hit
-      after(0, () => play("introRise", 1.62 / 1.46));
-      after(600, () => play("introWhoosh"));     // the spark sweeps along it
-      after(1460, () => play("introHit"));       // the word lands
-      after(1950, () => play("introShimmer"));   // the sheen passes over it
+      dropLetters();
     });
     Promise.all([loaded, ready]).then(() => after(Math.max(0, IDENT - (performance.now() - beganAt)), finish));
   }
   after(20000, finish);   // a piece that never answers must not hold the game shut for ever
+
+  // The drop: each letter falls out of the dark (stretched a little by its speed), lands squashed
+  // flat, bounces back up a fraction of the way and settles - an old arcade ident's bounce - one
+  // after another, a tick on each landing a step higher than the last. The last lands on the hit
+  // (a bloom and a nudge of the whole word); the swash sweeps in under them, the seal stamps on,
+  // the glow comes up and the trademark rolls up underneath on the shimmer.
+  function dropLetters() {
+    const STAGGER = 105, FALL = 980, LAND = .42;   // the landing is 42% into a letter's animation
+    const drop = -(innerHeight * .75 + (word ? word.getBoundingClientRect().top : 0));
+    const fallKeys = [
+      { offset: 0, transform: `translateY(${drop.toFixed(0)}px) scale(.94, 1.12)`, opacity: 1, easing: "cubic-bezier(.5, 0, .9, .55)" },
+      { offset: LAND, transform: "translateY(0) scale(1.2, .7)", easing: "cubic-bezier(.2, .7, .4, 1)" },
+      { offset: .6, transform: "translateY(-11%) scale(.95, 1.07)", easing: "cubic-bezier(.5, 0, .8, .5)" },
+      { offset: .74, transform: "translateY(0) scale(1.08, .9)", easing: "cubic-bezier(.2, .7, .4, 1)" },
+      { offset: .85, transform: "translateY(-2.5%) scale(.99, 1.02)", easing: "cubic-bezier(.5, 0, .8, .5)" },
+      { offset: .93, transform: "translateY(0) scale(1.02, .98)" },
+      { offset: 1, transform: "none", opacity: 1 },
+    ];
+    let t = 120;
+    INTRO_DROP.forEach((k, i) => {
+      const el = pieceEl[k];
+      if (!el) return;
+      after(t, () => el.animate(fallKeys, { duration: FALL, fill: "both" }).finished.then(() => el.classList.add("flat"), () => {}));
+      const landAt = t + FALL * LAND, last = i === INTRO_DROP.length - 1;
+      after(landAt, () => {
+        play("landBrick", .82 + i * .07);
+        if (last) {
+          play("introHit");
+          const fl = wrap.querySelector(".introflash");
+          if (fl) { fl.classList.remove("on"); void fl.offsetWidth; fl.classList.add("on"); }
+          word.animate([{ transform: "none" }, { transform: "translateY(1.2%) scale(1.03)" }, { transform: "none" }], { duration: 420, easing: "cubic-bezier(.2, .9, .3, 1)" });
+        }
+      });
+      t += STAGGER;
+    });
+    const landed = 120 + (INTRO_DROP.length - 1) * STAGGER + FALL * LAND;
+    after(landed + 140, () => {   // the swash sweeps in under the word, left to right
+      const sw = pieceEl.swash;
+      if (!sw) return;
+      play("introWhoosh");
+      sw.animate([{ clipPath: "inset(0 100% 0 0)", opacity: 1 }, { clipPath: "inset(0 0 0 0)", opacity: 1 }],
+                 { duration: 420, easing: "cubic-bezier(.5, 0, .2, 1)", fill: "both" }).finished.then(() => sw.classList.add("flat"), () => {});
+    });
+    after(landed + 520, () => {   // the seal stamps on
+      const se = pieceEl.seal;
+      if (!se) return;
+      se.style.transformOrigin = "50% 50%";
+      se.animate([{ transform: "scale(2.2) rotate(-14deg)", opacity: 0 }, { transform: "scale(.9) rotate(3deg)", opacity: 1, offset: .6 }, { transform: "none", opacity: 1 }],
+                 { duration: 340, easing: "cubic-bezier(.3, 0, .2, 1)", fill: "both" }).finished.then(() => se.classList.add("flat"), () => {});
+      word.querySelector(".iwglow").classList.add("up");
+    });
+    after(landed + 760, () => {   // the trademark rolls up underneath, and the TM pops on by the arrow
+      const line = wrap.querySelector(".introtm span"), tm = pieceEl.tm;
+      if (line) line.animate([{ transform: "translateY(120%)" }, { transform: "translateY(-12%)", offset: .7 }, { transform: "none" }],
+                             { duration: 620, easing: "cubic-bezier(.2, .8, .3, 1)", fill: "both" });
+      if (tm) tm.animate([{ opacity: 0, transform: "translateY(40%) scale(.6)" }, { opacity: 1, transform: "none" }],
+                         { duration: 360, delay: 160, easing: "cubic-bezier(.2, .9, .3, 1.4)", fill: "both" }).finished.then(() => tm.classList.add("flat"), () => {});
+      after(520, () => play("introShimmer"));
+    });
+  }
 }
 runIntro();
 // the tag on the wall wanders at random for as long as the page is up: a slow, small drift
@@ -8675,7 +8835,7 @@ const NUMERAL = { ".": "dot", ",": "comma" };
 const SVG_NS = "http://www.w3.org/2000/svg";
 let tvDefs = null, tvSeq = 0;
 function tvGlitch(el, { strength = 1, every = [1300, 3600], burst = [120, 320] } = {}) {
-  if (REDUCED_MOTION || !el) return;
+  if (VOODOO_NO_GLITCH || REDUCED_MOTION || !el) return;   // Voodoo on Bourbon: no TV glitch on wins or the bonus screens (owner, 2026-11-08)
   if (!tvDefs) {
     const svg = document.createElementNS(SVG_NS, "svg");
     svg.setAttribute("aria-hidden", "true");
@@ -9173,7 +9333,7 @@ function cycleMult(face, values = FEATURE_VALUES) {
   if (!face) return () => {};
   let vi = 0;
   const show = () => {
-    face.textContent = "x" + fmtMult(values[vi]);
+    vNum(face, "x" + fmtMult(values[vi]));
     face.style.setProperty("--heat", heatColour(values[vi]));
   };
   show();
@@ -9259,8 +9419,9 @@ function runFeatures() {
   wrap.setAttribute("aria-label", T("How the game works"));
   const box = (icon, title, text) => `<div class="fbox"><div class="fin"><div class="ficon">${icon}</div><h3>${title}</h3><p>${text}</p></div></div>`;
   wrap.innerHTML =
+    `<img class="ftitle" src="assets/title_logo.webp" alt="${T("Voodoo on Bourbon")}" draggable="false">` +
     `<div class="fboxes">` +
-      box(`<img src="${SYM.M.img}" alt="${T("Multi")}" draggable="false"><div class="fmult" id="featMult">x${fmtMult(FEATURE_VALUES[0])}</div>`,
+      box(`<img src="${SYM.M.img}" alt="${T("Multi")}" draggable="false"><div class="fmult" id="featMult" aria-label="x${fmtMult(FEATURE_VALUES[0])}">${[..."x" + fmtMult(FEATURE_VALUES[0])].map(ch => `<i class="vg g-${VGLYPH[ch] || ch}"></i>`).join("")}</div>`,
         T("Multi"),
         T(`Lands with a value from <b>x1.25</b> to <b>x1000</b> - sometimes in a line of 3 or 4, and once in a long while over the whole board. Every winning cluster is paid first; then it blows out and leaves its value on five cells, and a cluster on those cells is multiplied by the <b>sum</b> it covers. Winning clusters drop small multipliers under themselves too.`)) +
       box(`<img src="${SYM.BS.img}" alt="${T("FS scatter")}" draggable="false">`,

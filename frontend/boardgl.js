@@ -19,7 +19,7 @@
   "use strict";
   const PAD = 72;        // css px the canvas reaches past the board: the reels clip 60 px out at the sides; pops and bursts swell past the edge
   const MAX_RES = 2;     // device px per css px at most (a 3x phone draws its board at 2x: a third of the pixels to fill)
-  const TOP_CLIP = { spinning: 0, tumbling: 24 }, SIDE_CLIP = 60;   // the reels' clip-paths (.reel.spinning / .reel.tumbling)
+  const TOP_CLIP = { spinning: 20, tumbling: 20 }, SIDE_CLIP = 60;   // the reels' clip-paths (.reel.spinning / .reel.tumbling): to the iron frame's inner edge
 
   let app = null, board = null, root = null, tried = null;
   let dirty = true, geoDirty = true, res = 1, W = 0, H = 0;

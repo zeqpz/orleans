@@ -15,6 +15,8 @@ cluster pays, tumbles, Multis, FS / XFS scatters and the Bonus Boost mode, RTP 9
 | Background | Bourbon Street as a static 4K plate, with live layers on top (`frontend/bgscene.js`): gas lamps that flicker, neon signs that buzz, a breathing moon, reflections that follow the lamps, 170 twinkling, slowly drifting stars, and three bands of drifting green and violet fog |
 | Multi | No pop. The potion is hexed away: it burns from the rim inward along a voodoo-green edge, its spirit (a ghost of the XFS skull) rises, and green smoke and motes curl up (`hexIcon`). Its value condenses out of spirit wisps (`voodooReveal`); values evaporate rather than pop |
 | Board | An opaque midnight-velvet backing with a fleur-de-lis damask, cut to the iron frame's exact opening (`tools/nola/board_back.py`). The board is sized so the whole frame and the HUD fit on screen |
+| Intro | The newest SMUKIEZ black-and-white studio ident from zeqpz/slotsgame (2171935: letters drop in and bounce, swoosh, TM, (c) line, with its own sounds) as the loading screen; the VOODOO ON BOURBON logo stands over the three how-to-play cards. Ported with `patch -p1 frontend/index.html < tools/nola/intro_smukiez.diff` (one hunk, the intro markup, applied by hand) |
+| Multis | Potions coloured by value (`tools/nola/potion_tiers.py`: green to x2, sapphire to x5, violet to x20, gold to x100, blood red above); values in carved voodoo numerals inside a stitched voodoo border (`tools/nola/vnum.py`) |
 | UI | Iron-lace frame and panels, Mardi Gras gold digits and headlines, a VOODOO ON BOURBON wordmark, Fredoka throughout |
 | Music | A Bourbon Street brass band: bucket drums, sax, trombone, trumpet and sousaphone (Lyria 3 Pro). Base F, menu C, intro B-flat, bonus G minor, total B-flat; all five are seamless loops |
 | Sounds | Every sound except the HUD buttons, 52 sets: bucket-drum spin, gourd rattle, streetcar bells, brass stings, sad trombone, bead and doubloon showers, a landing sound for each symbol's material, Doc's cane, hat and magic |
@@ -42,7 +44,7 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
    - QA: `qa_sym.py all` and `qa_char.py` check loop seams, the hand-back to the rest pose and alpha at the frame
      edge. All currently pass.
    - Packing: `tools/blender/pack_frames.py all` (14-unit frame) and `tools/blender/pack_chars.py doc`.
-6. **Front end**: `reskin_frontend.py` applies every edit to `frontend/index.html` and `rules.js` as exact
+6. **Front end**: `tools/nola/edit.py` applies a later edit to index.html and records it in reskin_frontend.py. `reskin_frontend.py` applies every edit to `frontend/index.html` and `rules.js` as exact
    replacements, so a changed base fails loudly. Run it on a fresh base copy.
 7. **Music**: `tools/music/lyria.py <cue> --takes 2`. Pick takes by key, copy them to `art/music-src/`, then
    `tools/music/build.py --wav ...` and paste the printed `MUSIC` table.

@@ -2,7 +2,8 @@
 // (it must change), at 1920x1080 and on a portrait phone. usage: node tools/nola/qa_flame.js  (mock RGS on 8755)
 const path = require("path");
 const { chromium } = require(path.join(__dirname, "..", "..", "..", ".tools", "pw", "node_modules", "playwright"));
-const OUT = path.join(__dirname, "..", "..", "art", "nola-src", "qa_browser") + "/";
+const OUT = require("path").join(require("os").tmpdir(), "nola_qa") + "/";   // screenshots go to the temp folder (writes into the repo tripped Windows file locks)
+require("fs").mkdirSync(OUT, { recursive: true });
 (async () => {
   const b = await chromium.launch();
   for (const [name, vp, dev, dsf] of [["desk", { width: 1920, height: 1080 }, "desktop", 1], ["phone", { width: 390, height: 844 }, "mobile", 2]]) {

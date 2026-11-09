@@ -7,8 +7,8 @@ const path = require("path"), fs = require("fs");
 const { chromium } = require(path.join(__dirname, "..", "..", "..", ".tools", "pw", "node_modules", "playwright"));
 const PORT = process.argv[2] || "8755";
 const BASE = `http://localhost:${PORT}`;
-const OUT = path.join(__dirname, "..", "..", "art", "nola-src", "qa_browser");
-fs.mkdirSync(OUT, { recursive: true });
+const OUT = require("path").join(require("os").tmpdir(), "nola_qa") + "/";   // screenshots go to the temp folder (writes into the repo tripped Windows file locks)
+require("fs").mkdirSync(OUT, { recursive: true });
 
 (async () => {
   const browser = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });

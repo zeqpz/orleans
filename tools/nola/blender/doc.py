@@ -23,7 +23,7 @@ FX = os.path.join(ROOT, "art", "nola-src", "fx")
 OUT = os.path.join(ROOT, "art", "blender", "chars", "doc")
 FPS = 30
 W_PX, H_PX = 1024, 1536                    # the drawing's coordinate space (the 4K plates map onto it); 100 px = 1 unit
-RES = (800, 1080)
+RES = (1600, 2160)                         # 2x (owner, 2026-11-08: crisp beside the 4K street); the 4K plates carry it
 ORTHO = 17.6                               # units across the frame's height (the art is 15.36 tall)
 PX = RES[1] / ORTHO
 FACES = json.load(open(os.path.join(LAY, "meta.json")))["faces"] if os.path.exists(os.path.join(LAY, "meta.json")) else []
@@ -649,7 +649,7 @@ def render(clips):
 def write_meta():
     """What pack_chars.py reads: frame size, standing height, ground line, the clips."""
     top = (H_PX / 2 - 4) / 100             # the top of his hat, art px 4
-    base = (H_PX / 2 - 1500) / 100         # his soles, art px 1500
+    base = (H_PX / 2 - 1522) / 100         # his soles' lowest point (the shoe tips), art px ~1522 - the game stands this line on its canvas's bottom edge, so anything under it is cut off (owner, 2026-11-08)
     cam_z = -0.3                            # the camera sits 0.3 units low
     meta = {"fps": FPS, "size": list(RES), "rest_height_px": round((top - base) * PX, 1),
             "ground_y": round(RES[1] / 2 - (base - cam_z) * PX, 1),

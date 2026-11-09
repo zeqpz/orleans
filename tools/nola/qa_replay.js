@@ -1,7 +1,8 @@
 // Bet Replay of book 9 (a round with a Multi): logs every board event and screenshots the hex-away while it plays.
 // usage: node tools/nola/qa_replay.js   (mock RGS on 8755)
 const { chromium } = require(require("path").join(__dirname, "..", "..", "..", ".tools", "pw", "node_modules", "playwright"));
-const OUT = require("path").join(__dirname, "..", "..", "art", "nola-src", "qa_browser") + "/";
+const OUT = require("path").join(require("os").tmpdir(), "nola_qa") + "/";   // screenshots go to the temp folder (writes into the repo tripped Windows file locks)
+require("fs").mkdirSync(OUT, { recursive: true });
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1600, height: 900 } });
   const log = []; p.on("console", m => { if (/^(EV|BURST|HEX)/.test(m.text())) log.push(m.text()); });
