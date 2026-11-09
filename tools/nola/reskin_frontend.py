@@ -518,6 +518,18 @@ rep('    SYMF.rest = (async () => {\n      for (const clip of ["hit", "idle", "m
 rep("// Every clip in, cut and on the GPU (perf, 2026-11-09): the loading screen and a replay's Play wait on this.\n// The landings alone used to let the game in, and the hit, idle and Multi clips were decoded, resized and\n// uploaded while the first round was already playing (~2.5 s of a slow phone's main thread).",
     "// The clips a round plays within seconds, cut and on the GPU (perf, 2026-11-09): the loading screen and a\n// replay's Play wait on this. The landings alone used to let the game in, and the hit, idle and Multi clips were\n// resized on the page while the first round was playing (~2.5 s of a slow phone's main thread). Now every sheet\n// is resized in the board's workers (boardgl.js), and only the idles - the biggest clip, which a resting symbol\n// can do without for a moment (it holds its rest pose) - are still arriving once the game is up.")
 
+rep('for (const [, id] of POTION_TIERS) if (id !== "M") { const i = new Image(); i.src = `assets/flat/${id}.webp`; FLAT[id] = i; }',
+    'for (const [, id] of POTION_TIERS) if (id !== "M") { const i = new Image(); i.src = `assets/flat/${id}.webp`; FLAT[id] = i; }\n// the potions\' liquid colours (sampled from assets/flat/M..M5, lifted a touch to read as glowing text): the win\n// figure and its "x" wear the colour of the bottle their value comes in (owner, 2026-11-09)\nconst POTION_INK = { M: [157, 255, 110], M2: [104, 212, 255], M3: [184, 132, 255], M4: [255, 170, 64], M5: [255, 66, 102] };\nconst potionInk = v => POTION_INK[potionId(v)];\nconst rgbCss = c => `rgb(${c.map(Math.round).join(", ")})`;')
+
+rep('  const final = amount, m = mult > 1 ? mult : 1, base = final / m;\n  const paint = (v, exact) => {\n    const t = winFigure(v, exact);\n    if (t === num.textContent) return;   // only a new figure is drawn (and its new colour)\n    num.textContent = t;\n    chip.style.color = `hsl(${(100 + 185 * Math.min(1, v / Math.max(1e-9, final))).toFixed(0)} 90% 64%)`;   // green -> purple\n  };\n  const slamTag = () => {\n    const tag = document.createElement("span");\n    tag.className = "wpx";\n    tag.textContent = "x" + fmtMult(m);',
+    '  const final = amount, m = mult > 1 ? mult : 1, base = final / m;\n  // its colour is a potion\'s (POTION_INK): the plain potion\'s green while it counts what the cluster is worth; when\n  // Multis pay in, it runs on into the colour of the bottle their total comes in as it climbs to what it pays\n  const inkFrom = POTION_INK.M, inkTo = potionInk(m);\n  const paint = (v, exact) => {\n    const t = winFigure(v, exact);\n    if (t === num.textContent) return;   // only a new figure is drawn (and its new colour)\n    num.textContent = t;\n    const k = m > 1 ? Math.min(1, Math.max(0, (v - base) / Math.max(1e-9, final - base))) : 0;\n    chip.style.color = rgbCss(inkFrom.map((c, i) => c + (inkTo[i] - c) * k));\n  };\n  const slamTag = () => {\n    const tag = document.createElement("span");\n    tag.className = "wpx";\n    tag.style.color = rgbCss(inkTo);     // the "x" in the colour of the bottle that value comes in\n    tag.textContent = "x" + fmtMult(m);')
+
+rep('  .reel.spinning { clip-path: inset(-20px -60px); }',
+    '  .reel.spinning { clip-path: inset(-20px -60px calc(-1 * var(--reel-floor, 20px)) -60px); }')
+
+rep('  .reel.tumbling { clip-path: inset(-20px -60px); }',
+    '  .reel.tumbling { clip-path: inset(-20px -60px calc(-1 * var(--reel-floor, 20px)) -60px); }')
+
 # ------------------------------------------------------------------ the voodoo look (appended to the stylesheet)
 CSS = '''
   /* ---- Voodoo on Bourbon (2026-11-08) ---------------------------------------------------------------
@@ -668,6 +680,9 @@ CSS = '''
   }
 
   #charfx { margin-left: calc(-1 * var(--char-nudge, 0px)); }   /* standOnWalk: the open hand clear of the frame */
+
+  /* the multiplier on the win figure glows in its own potion colour (placeWinChip sets it), not white on green */
+  .winpop .wpx { text-shadow: 0 0 6px currentColor, 0 0 16px currentColor, 0 3px 0 rgba(0, 0, 0, .5); }
 '''
 rep("</style>\n</head>", CSS + "</style>\n</head>")
 

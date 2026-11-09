@@ -20,6 +20,11 @@
   const PAD = 72;        // css px the canvas reaches past the board: the reels clip 60 px out at the sides; pops and bursts swell past the edge
   const MAX_RES = 2;     // device px per css px at most (a 3x phone draws its board at 2x: a third of the pixels to fill)
   const TOP_CLIP = { spinning: 20, tumbling: 20 }, SIDE_CLIP = 60;   // the reels' clip-paths (.reel.spinning / .reel.tumbling): to the iron frame's inner edge
+  // ...and their bottom: the middle of the bottom bar's rail in assets/frame.webp (solid iron over art rows 1776-1802 of
+  // 1982, the rail the spikes stand on), so a tile falling out of the board drops on behind the spikes and its cut edge
+  // stays hidden in the iron as the frame drifts (owner, 2026-11-09). layout() measures it per reel and hands it to
+  // the clip-paths in index.html as --reel-floor (px below the reel).
+  const FRAME_RAIL = 1789 / 1982;
 
   let app = null, board = null, root = null, tried = null;
   let dirty = true, geoDirty = true, res = 1, W = 0, H = 0;
@@ -190,7 +195,12 @@
         root.addChild(cont); root.addChild(mask); mask.visible = false;
       }
       const p = offsetIn(reel);
-      Object.assign(R[r], { x: p.x, y: p.y, w: reel.offsetWidth, h: reel.offsetHeight, clip: "?" });
+      // the rail's line under this reel (the frame's layout box: its idle drift is a transform, not counted)
+      const fr = document.getElementById("paintframe");
+      const rail = fr && fr.offsetParent === board && fr.offsetHeight ? fr.offsetTop + fr.offsetHeight * FRAME_RAIL : 0;
+      const floor = Math.round(Math.min(PAD + board.offsetHeight - p.y - reel.offsetHeight, Math.max(TOP_CLIP.spinning, rail - p.y - reel.offsetHeight)));
+      Object.assign(R[r], { x: p.x, y: p.y, w: reel.offsetWidth, h: reel.offsetHeight, floor, clip: "?" });
+      if (r === 0) board.style.setProperty("--reel-floor", floor + "px");
       for (let y = 0; y < cellEls[r].length; y++) {
         const cell = cellEls[r][y];
         if (!C[r]) C[r] = [];
@@ -540,7 +550,7 @@
       rr.clip = clip; dirty = true; rr.cont.zIndex = 0;
       if (clip) {
         const t = TOP_CLIP[clip];
-        rr.mask.clear().rect(PAD + rr.x - SIDE_CLIP, PAD + rr.y - t, rr.w + 2 * SIDE_CLIP, rr.h + 2 * t).fill(0xffffff);
+        rr.mask.clear().rect(PAD + rr.x - SIDE_CLIP, PAD + rr.y - t, rr.w + 2 * SIDE_CLIP, rr.h + t + (rr.floor || t)).fill(0xffffff);
         rr.mask.visible = true; rr.cont.mask = rr.mask;
       } else { rr.cont.mask = null; rr.mask.visible = false; }
     }

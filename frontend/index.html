@@ -1429,9 +1429,9 @@
      Leader's or Phantom's glow reaches ~20px past the reel, and clipping it at the edge cut
      every glowing scatter into a hard-edged box for the length of each cascade. A falling
      tile shows for a frame or two in that 24px before it is "in"; the glow never gets cut. */
-  .reel.spinning { clip-path: inset(-20px -60px); }   /* Voodoo on Bourbon: the strip runs on to the iron frame's inner edge (18px out) and just under it */
+  .reel.spinning { clip-path: inset(-20px -60px calc(-1 * var(--reel-floor, 20px)) -60px); }   /* Voodoo on Bourbon: the strip runs on to the iron frame's inner edge (18px out) and just under it */
   .reel.spinning > .cell { visibility: hidden; }  /* result stays hidden until the overlay lands */
-  .reel.tumbling { clip-path: inset(-20px -60px); }   /* the same line as the spin: tiles show until they pass under the iron */
+  .reel.tumbling { clip-path: inset(-20px -60px calc(-1 * var(--reel-floor, 20px)) -60px); }   /* the same line as the spin: tiles show until they pass under the iron */
   /* the near-miss column: the same rounded corner the multiplier boxes carry */
   .reel.antic {
     border-color: var(--gold); border-radius: 14px;
@@ -3281,6 +3281,9 @@
   }
 
   #charfx { margin-left: calc(-1 * var(--char-nudge, 0px)); }   /* standOnWalk: the open hand clear of the frame */
+
+  /* the multiplier on the win figure glows in its own potion colour (placeWinChip sets it), not white on green */
+  .winpop .wpx { text-shadow: 0 0 6px currentColor, 0 0 16px currentColor, 0 3px 0 rgba(0, 0, 0, .5); }
 </style>
 </head>
 <body>
@@ -3750,6 +3753,11 @@ function potionId(v) {
   return "M";
 }
 for (const [, id] of POTION_TIERS) if (id !== "M") { const i = new Image(); i.src = `assets/flat/${id}.webp`; FLAT[id] = i; }
+// the potions' liquid colours (sampled from assets/flat/M..M5, lifted a touch to read as glowing text): the win
+// figure and its "x" wear the colour of the bottle their value comes in (owner, 2026-11-09)
+const POTION_INK = { M: [157, 255, 110], M2: [104, 212, 255], M3: [184, 132, 255], M4: [255, 170, 64], M5: [255, 66, 102] };
+const potionInk = v => POTION_INK[potionId(v)];
+const rgbCss = c => `rgb(${c.map(Math.round).join(", ")})`;
 function fillCell(cell, sym) {
   const def = SYM[sym.name] || { label: sym.name, sub: "", cls: "low" };
   const el = cell.ico || cell;   // a board cell fills its lasting icon box
@@ -6967,15 +6975,20 @@ function placeWinChip(positions, amount, mult) {
   chip.style.left = (x + cell.offsetWidth / 2) + "px";
   chip.style.top = (top + cell.offsetHeight / 2) + "px";
   const final = amount, m = mult > 1 ? mult : 1, base = final / m;
+  // its colour is a potion's (POTION_INK): the plain potion's green while it counts what the cluster is worth; when
+  // Multis pay in, it runs on into the colour of the bottle their total comes in as it climbs to what it pays
+  const inkFrom = POTION_INK.M, inkTo = potionInk(m);
   const paint = (v, exact) => {
     const t = winFigure(v, exact);
     if (t === num.textContent) return;   // only a new figure is drawn (and its new colour)
     num.textContent = t;
-    chip.style.color = `hsl(${(100 + 185 * Math.min(1, v / Math.max(1e-9, final))).toFixed(0)} 90% 64%)`;   // green -> purple
+    const k = m > 1 ? Math.min(1, Math.max(0, (v - base) / Math.max(1e-9, final - base))) : 0;
+    chip.style.color = rgbCss(inkFrom.map((c, i) => c + (inkTo[i] - c) * k));
   };
   const slamTag = () => {
     const tag = document.createElement("span");
     tag.className = "wpx";
+    tag.style.color = rgbCss(inkTo);     // the "x" in the colour of the bottle that value comes in
     tag.textContent = "x" + fmtMult(m);
     chip.appendChild(tag);
   };
