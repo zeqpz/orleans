@@ -1,0 +1,20 @@
+{
+ "size": [
+  2731,
+  4096
+ ],
+ "base": [
+  1024,
+  1536
+ ],
+ "faces": [
+  "neutral",
+  "blink",
+  "cheer",
+  "laugh",
+  "sad",
+  "shock",
+  "smug",
+  "wink"
+ ]
+}

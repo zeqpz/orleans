@@ -1,0 +1,29 @@
+{
+ "cue": "total",
+ "model": "google/lyria-3-pro-preview",
+ "prompt": "Instrumental only. Key: F major. Tempo: 120 BPM. Strictly instrumental: no vocals, no singing, no humming, no shouts, no chants, no spoken words. A triumphant brass-band finale celebrating a huge win: 120 BPM, F major, 4/4. It opens with a big celebratory hit - a crash, a bucket-drum roll and the whole horn section holding a bright major chord with a trumpet shake on top - then a joyful, strutting victory second line: a New Orleans street brass band busking on Bourbon Street: bucket drums - upturned plastic buckets, pans and a cowbell played with drumsticks - laying down a syncopated second-line street beat, a fat sousaphone on the bass line, a gritty tenor saxophone, a sliding, growling trombone and a bright trumpet, with handclaps and a tambourine, the horns playing a big happy tune over F - C - B-flat - F. Uplifting, victorious and a little goofy, like the whole of Bourbon Street dancing. Structure: [Celebration hit] -> [Joyful groove, steady and repeating]. No breakdown, no ending, no fade-out.",
+ "text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[B4]]",
+ "usage": {
+  "prompt_tokens": 254,
+  "completion_tokens": 10,
+  "total_tokens": 264,
+  "cost": 0.08,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.08,
+   "upstream_inference_prompt_cost": 0,
+   "upstream_inference_completions_cost": 0.08
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 0,
+   "image_tokens": 0,
+   "audio_tokens": 10
+  }
+ }
+}

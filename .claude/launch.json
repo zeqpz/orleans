@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "orleans-game",
+      "runtimeExecutable": "C:\\Users\\CooperHinkel\\Documents\\ClaudeRoblox\\smukiez-slot\\.venv\\Scripts\\python.exe",
+      "runtimeArgs": [
+        "frontend/mock_rgs.py"
+      ],
+      "port": 8755
+    }
+  ]
+}

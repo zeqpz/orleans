@@ -1,0 +1,29 @@
+{
+ "cue": "intro",
+ "model": "google/lyria-3-pro-preview",
+ "prompt": "Instrumental only. Key: C major. Tempo: 130 BPM. Strictly instrumental: no vocals, no singing, no humming, no shouts, no chants, no spoken words. A brass-band announcement for a bonus round: 130 BPM, C major, 4/4. It opens instantly with a big hit - a crash, a rattling bucket-drum roll, the whole brass section blasting a rising fanfare chord with a trombone glissando up - then settles into an excited, pumping second-line vamp that holds steady and keeps repeating: driving bucket drums and cowbell, a bouncing sousaphone, short punchy sax and trumpet stabs, the trombone sliding between them, handclaps. The excited feeling just before the parade takes off. Structure: [Fanfare hit] -> [Steady pumping vamp, repeating]. No big drop, no ending, no fade-out.",
+ "text": "[[A0]]\n[[B1]]",
+ "usage": {
+  "prompt_tokens": 190,
+  "completion_tokens": 4,
+  "total_tokens": 194,
+  "cost": 0.08,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.08,
+   "upstream_inference_prompt_cost": 0,
+   "upstream_inference_completions_cost": 0.08
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 0,
+   "image_tokens": 0,
+   "audio_tokens": 4
+  }
+ }
+}

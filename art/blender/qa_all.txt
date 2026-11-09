@@ -1,0 +1,180 @@
+H1
+  idle seam (last->first) 4.18   (neighbouring frames ~ 4.16)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+H2
+  idle seam (last->first) 3.40   (neighbouring frames ~ 3.39)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+H3
+  idle seam (last->first) 3.74   (neighbouring frames ~ 3.64)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+H4
+  idle seam (last->first) 2.24   (neighbouring frames ~ 2.23)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 1
+  multi: 43 frames, max alpha on the frame edge 1
+H5
+  idle seam (last->first) 3.95   (neighbouring frames ~ 3.93)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+H6
+  idle seam (last->first) 3.92   (neighbouring frames ~ 3.84)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+H7
+  idle seam (last->first) 3.96   (neighbouring frames ~ 3.95)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+L1
+  idle seam (last->first) 5.88   (neighbouring frames ~ 5.79)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L2
+  idle seam (last->first) 4.41   (neighbouring frames ~ 4.41)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L3
+  idle seam (last->first) 2.26   (neighbouring frames ~ 2.26)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+L4
+  idle seam (last->first) 4.84   (neighbouring frames ~ 4.83)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+L5
+  idle seam (last->first) 3.78   (neighbouring frames ~ 3.78)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L6
+  idle seam (last->first) 4.60   (neighbouring frames ~ 4.57)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L7
+  idle seam (last->first) 5.34   (neighbouring frames ~ 5.24)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L8
+  idle seam (last->first) 6.84   (neighbouring frames ~ 6.82)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+L9
+  idle seam (last->first) 0.74   (neighbouring frames ~ 0.74)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0
+L10
+  idle seam (last->first) 1.16   (neighbouring frames ~ 1.15)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+M
+  idle seam (last->first) 3.68   (neighbouring frames ~ 3.67)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 2
+  multi: 43 frames, max alpha on the frame edge 1
+BS
+  idle seam (last->first) 5.02   (neighbouring frames ~ 5.00)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 0
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 1
+ES
+  idle seam (last->first) 7.20   (neighbouring frames ~ 7.22)
+  land: first vs rest 0.00  last vs rest 0.00
+  hit: first vs rest 0.00  last vs rest 0.00
+  multi: first vs rest 0.00  last vs rest 0.00
+  idle: 72 frames, max alpha on the frame edge 0
+  land: 25 frames, max alpha on the frame edge 1
+  hit: 47 frames, max alpha on the frame edge 0
+  multi: 43 frames, max alpha on the frame edge 0

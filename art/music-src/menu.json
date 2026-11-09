@@ -1,0 +1,29 @@
+{
+ "cue": "menu",
+ "model": "google/lyria-3-pro-preview",
+ "prompt": "Instrumental only. Key: F major (F, A, C). Tempo: 92 BPM. Strictly instrumental: no vocals, no singing, no humming, no shouts, no chants, no spoken words. A slow, sultry late-night Bourbon Street vamp while deciding something: a New Orleans street brass band busking on Bourbon Street: bucket drums - upturned plastic buckets, pans and a cowbell played with drumsticks - laying down a syncopated second-line street beat, a fat sousaphone on the bass line, a gritty tenor saxophone, a sliding, growling trombone and a bright trumpet, with handclaps and a tambourine, playing softly. 92 BPM, F major, 4/4. Lazy brushed bucket-drum shuffle, a soft sousaphone walking on every beat, a breathy tenor saxophone and a muted trombone playing a smoky, mysterious little tune, a muted trumpet now and then. Calm and low energy at a rock-steady tempo: the sousaphone on every beat and a rim click on 2 and 4 keep strict time. The same relaxed groove from start to finish: no build-ups, no rubato, no solo, no big ending, no fade-out.",
+ "text": "[[A0]]\n[[B1]]\n[[C2]]\n[[B3]]\n[[D4]]",
+ "usage": {
+  "prompt_tokens": 256,
+  "completion_tokens": 10,
+  "total_tokens": 266,
+  "cost": 0.08,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.08,
+   "upstream_inference_prompt_cost": 0,
+   "upstream_inference_completions_cost": 0.08
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 0,
+   "image_tokens": 0,
+   "audio_tokens": 10
+  }
+ }
+}

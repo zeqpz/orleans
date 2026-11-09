@@ -1,0 +1,29 @@
+{
+ "cue": "bonus",
+ "model": "google/lyria-3-pro-preview",
+ "prompt": "Instrumental only. Key: C major. Tempo: 130 BPM. Strictly instrumental: no vocals, no singing, no humming, no shouts, no chants, no spoken words. A fast, rowdy, joyful street parade for a slot game's free spins: 130 BPM, C major, 4/4: a New Orleans street brass band busking on Bourbon Street: bucket drums - upturned plastic buckets, pans and a cowbell played with drumsticks - laying down a syncopated second-line street beat, a fat sousaphone on the bass line, a gritty tenor saxophone, a sliding, growling trombone and a bright trumpet, with handclaps and a tambourine at full tilt. Hard-driving bucket drums and cowbell, a pumping sousaphone line, the tenor sax and trumpet blowing a catchy hook in unison, the trombone growling and sliding underneath, handclaps and tambourine. A Mardi Gras second line with a spooky voodoo swagger. Energetic and fun from the first bar: [Main section] -> [Main section, sax and trumpet trading licks] -> [Main section with variations] -> [Main section]. No intro, no breakdown, no ending, no fade-out.",
+ "text": "[[A0]]\n[[B1]]\n[[C2]]\n[[A3]]",
+ "usage": {
+  "prompt_tokens": 261,
+  "completion_tokens": 8,
+  "total_tokens": 269,
+  "cost": 0.08,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.08,
+   "upstream_inference_prompt_cost": 0,
+   "upstream_inference_completions_cost": 0.08
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 0,
+   "image_tokens": 0,
+   "audio_tokens": 8
+  }
+ }
+}

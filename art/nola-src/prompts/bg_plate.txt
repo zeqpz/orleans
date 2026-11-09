@@ -1,0 +1,9 @@
+Redraw the attached background painting EXACTLY - the same Bourbon Street scene, same buildings, balconies, ferns, bunting, beads, windows, shutters, lamp posts, barrels, plants, cathedral, palm trees, cobblestones, same composition, same camera, same outlines, same Rick and Morty cartoon style and same colours - but with every LIGHT and every MAGICAL or SKY EFFECT removed, so that they can be animated separately on top:
+- the gas lamps are switched OFF: dark empty glass panes, no flame, no glow around them, no light pooling below them;
+- the neon signs (fleur-de-lis, trumpet, saxophone, skull) are switched OFF: the same tube shapes drawn as dark unlit glass tubes, no glow at all;
+- NO moon and no moon halo at all: just plain night sky where it was, with the same few clouds;
+- NO stars at all: the sky is a smooth plain deep-navy-to-purple gradient;
+- NO green smoke, no green wisps, no green ground fog, no fireflies, no floating lights, no glowing particles anywhere;
+- the wet cobblestones keep their shine but with no coloured light reflections;
+- the windows keep a soft warm interior light (that stays).
+Keep everything else identical in position and size.

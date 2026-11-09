@@ -1,0 +1,29 @@
+{
+ "cue": "base",
+ "model": "google/lyria-3-pro-preview",
+ "prompt": "Instrumental only. Key: F major. Tempo: 100 BPM. Strictly instrumental: no vocals, no singing, no humming, no shouts, no chants, no spoken words. A strutting, good-time groove for a cartoon slot game, 100 BPM, F major, 4/4: a New Orleans street brass band busking on Bourbon Street: bucket drums - upturned plastic buckets, pans and a cowbell played with drumsticks - laying down a syncopated second-line street beat, a fat sousaphone on the bass line, a gritty tenor saxophone, a sliding, growling trombone and a bright trumpet, with handclaps and a tambourine. Laid-back second-line swagger, a little spooky and mischievous like a voodoo party at midnight, but warm and friendly; the saxophone and trombone trade a catchy riff over the sousaphone, the trumpet answers. Background music that can play for a long time: never busy or fatiguing, the bucket-drum groove steady throughout. Structure: [Short drum intro] -> [Main groove] -> [Main groove, sax and trombone trading the riff] -> [Main groove]. No breakdown, no big ending, no fade-out.",
+ "text": "[[A0]]\n[[B1]]\n[[C2]]\n[[D3]]\n[[C4]]",
+ "usage": {
+  "prompt_tokens": 261,
+  "completion_tokens": 10,
+  "total_tokens": 271,
+  "cost": 0.08,
+  "is_byok": false,
+  "prompt_tokens_details": {
+   "cached_tokens": 0,
+   "cache_write_tokens": 0,
+   "audio_tokens": 0,
+   "video_tokens": 0
+  },
+  "cost_details": {
+   "upstream_inference_cost": 0.08,
+   "upstream_inference_prompt_cost": 0,
+   "upstream_inference_completions_cost": 0.08
+  },
+  "completion_tokens_details": {
+   "reasoning_tokens": 0,
+   "image_tokens": 0,
+   "audio_tokens": 10
+  }
+ }
+}

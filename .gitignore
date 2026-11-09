@@ -1,0 +1,34 @@
+.venv/
+__pycache__/
+*.pyc
+*.log
+
+# scraped Discord dumps (other people's messages) — keep out of the public repo
+research/
+# superseded uploader; it embeds presigned S3 URLs / STS tokens
+upload_front.py
+# generated
+frontend_manifest.json
+# duplicate of frontend/assets kept for the Media page attempt
+upload_media/
+# local pre-shrink book backups (tools/shrink_books.py keeps them next to the originals)
+*.jsonl.zst.orig
+
+# hard links to math-sdk's publish files for the Stake Dev Tool (no copy in git)
+devtool-math/
+
+# Blender pipeline: renders and QA images are rebuilt from art/blender/symbols/*.blend (tools/blender/run.py)
+art/blender/renders/
+art/blender/qa/
+art/blender/plates/*_raw.png
+art/blender/plates/*_response.json
+*.blend1
+# the characters' renders and QA images are rebuilt from art/blender/chars/<char>/*.blend (tools/blender/chars/<char>/run.py)
+art/blender/chars/*/renders/
+art/blender/chars/*/qa/
+# QA review screenshots (local notes)
+qa-review/
+
+# Voodoo on Bourbon: QA contact sheets and the 1K character plates (rebuilt by tools/nola)
+art/nola-src/_*.png
+art/nola-src/doc_1k/
