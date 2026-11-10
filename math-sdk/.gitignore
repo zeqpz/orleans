@@ -38,3 +38,10 @@ __pycache__
 
 # pre-shrink backups written by tools/shrink_books.py stay local
 *.jsonl.zst.orig
+
+# Voodoo on Bourbon 5x5 (2026-11-09): the big books are over GitHub's 100 MB limit; uploaded to engine.io from disk
+games/voodoo_5x5/library/publish_files/books_base.jsonl.zst
+games/voodoo_5x5/library/publish_files/books_bonus.jsonl.zst
+games/voodoo_5x5/library/publish_files/books_extremebonus.jsonl.zst
+games/voodoo_5x5/library/publish_files/books_boost.jsonl.zst
+games/voodoo_5x5/logs/

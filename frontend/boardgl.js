@@ -575,10 +575,14 @@
         if (c.m) mm.set(c.m.a, c.m.b, c.m.c, c.m.d, c.m.e + PAD + b.x, c.m.f + PAD + b.y);
         else mm.set(1, 0, 0, 1, PAD + b.x, PAD + b.y);
         c.cont.setFromMatrix(mm);
-        const parent = rr && rr.clip ? rr.cont : root;
+        // only a tile on the move rides the reel's clip (half a cell or more off its slot: falling in, falling
+        // out); one at rest or landing is drawn unclipped, so its glow can spread past the board's edge rows
+        // and columns (owner, 2026-11-09: glows were cut at the edge boxes while a column tumbled)
+        const moving = !!c.m && Math.abs(c.m.f) > b.h * .5;
+        const parent = rr && rr.clip && moving ? rr.cont : root;
         if (c.cont.parent !== parent) parent.addChild(c.cont);
         c.cont.zIndex = c.z * 1000 + c.order;
-        if (rr && rr.clip) rr.cont.zIndex = Math.max(rr.cont.zIndex || 0, c.cont.zIndex);
+        if (parent !== root) rr.cont.zIndex = Math.max(rr.cont.zIndex || 0, c.cont.zIndex);
         // the rig: the icon's footprint scaled into the cell's 88% box, centred; the clip's box inside it
         const m = rig._m, rw = m.icon[0] * 10, rh = m.icon[1] * 10, bx = m.clips[rig._gclip].box;
         const sR = Math.min(b.cw * .88 / rw, b.ch * .88 / rh);

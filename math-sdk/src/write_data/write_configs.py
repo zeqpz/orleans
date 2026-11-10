@@ -121,6 +121,10 @@ def make_temp_math_config(gamestate):
                     fence_info["hr"] = str(fence_obj["hr"])
                 if fence_obj.get("rtp") is not None:
                     fence_info["rtp"] = str(fence_obj["rtp"])
+                # optional per-fence mean-to-median band (the optimiser defaults to 0..10)
+                for m2m_key in ("min_mean_to_median", "max_mean_to_median"):
+                    if fence_obj.get(m2m_key) is not None:
+                        fence_info[m2m_key] = str(fence_obj[m2m_key])
 
                 fence_info["identity_condition"] = {}
                 fence_info["identity_condition"]["search"] = []

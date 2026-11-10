@@ -13,7 +13,8 @@ every payout's probability where the optimiser put it (exactly, or to within 10^
    rounds: the cap comes down until they fit. The excess goes to the other books with the same
    payout, so each payout's total weight - and with it the RTP, the hit rate and every
    volatility statistic - is exactly unchanged. A payout that only rare-wall books reach is
-   left alone. Base mode only.
+   left alone. Base-game modes only (--rare-wall-modes: base and the Bonus Boost, whose spins
+   are base spins).
 2. The RTP is never a rounding error over its ceiling. Integer weights can land a mode a hair
    over 0.967 (the extreme buy came out 3.5e-13 above), and the SDK's 3-star volatility check
    (math-sdk/utils/rgs_verification.py) is a strict rtp > 0.967 - computed in float64 with
@@ -24,7 +25,7 @@ every payout's probability where the optimiser put it (exactly, or to within 10^
 Run it after every optimisation (the optimiser rewrites the tables); a second run changes
 nothing. The books are not touched, so the RGS verification sidecars stay valid.
 
-    python tools/finish_luts.py <publish_files dir> [--rare-wall 1000] [--rare-wall-rate 1500]
+    python tools/finish_luts.py <publish_files dir> [--rare-wall 1000] [--rare-wall-rate 1500] [--rare-wall-modes base,boost]
                                 [--rtp-ceiling 0.967] [--dry-run]
 """
 import argparse
@@ -135,6 +136,7 @@ def main():
     ap.add_argument("publish_dir")
     ap.add_argument("--rare-wall", type=float, default=1000.0)
     ap.add_argument("--rare-wall-rate", type=int, default=1500, help="such rounds at most once in this many")
+    ap.add_argument("--rare-wall-modes", default="base,boost", help="modes the rare-wall cap applies to")
     ap.add_argument("--rtp-ceiling", default="0.967")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
@@ -150,7 +152,7 @@ def main():
             payouts[p] = payouts.get(p, 0) + w
         r0 = rtp(rows, cost)
         changed = False
-        if name == "base":
+        if name in args.rare_wall_modes.split(","):
             rare = rare_wall_books(os.path.join(args.publish_dir, mode["events"]), args.rare_wall)
             capped, before, after = cap_rare(rows, rare, args.rare_wall_rate)
             heaviest = max((w for i, w, _ in rows if i in rare), default=0)

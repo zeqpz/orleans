@@ -1,6 +1,6 @@
 /* Game rules, paytable and UI guide — the content behind the (i) button.
  *
- * Every number here mirrors math-sdk/games/smukiez_tag_run/game_config.py; the reviewer
+ * Every number here mirrors math-sdk/games/voodoo_5x5/game_config.py (the 5x5 board); the reviewer
  * checks wins against this page, so it must never drift from the paytable the books were
  * generated with. Pays are multiples of the TOTAL bet, per cluster, stepped by cluster size.
  *
@@ -11,7 +11,7 @@
 const RULES = (() => {
   // Cluster size tiers: a cluster of 5, 6, 7-8, 9-11, 12-15 or 16+ matching symbols. One
   // entry per tier, in that order — verbatim from game_config.py.
-  const TIERS = ["5", "6", "7-8", "9-11", "12-15", "16+"];
+  const TIERS = ["5", "6", "7-8", "9-11", "12-15", "16-25"];
   const PAYS = {   // symbol: [t5, t6, t7_8, t9_11, t12_15, t16plus]
     H1: [4, 8, 16, 40, 100, 400],
     H2: [3.2, 6, 12, 30, 80, 300],
@@ -20,16 +20,9 @@ const RULES = (() => {
     H5: [1.6, 3.2, 6.4, 16, 40, 120],
     H6: [1.6, 3.2, 6.4, 16, 40, 120],
     H7: [1.2, 2.4, 4.8, 12, 32, 100],
-    L1: [0.8, 1.6, 3.2, 8, 20, 60],
-    L2: [0.8, 1.6, 3.2, 8, 20, 60],
-    L3: [0.8, 1.2, 2.4, 6, 16, 48],
-    L4: [0.4, 1.2, 2.4, 6, 16, 48],
-    L5: [0.4, 0.8, 2, 4.8, 12, 40],
-    L6: [0.4, 0.8, 2, 4.8, 12, 40],
-    L7: [0.4, 0.8, 1.6, 4, 10, 32],
-    L8: [0.4, 0.8, 1.6, 4, 10, 32],
-    L9: [0.4, 0.8, 1.2, 3.2, 8, 24],
-    L10: [0.4, 0.8, 1.2, 3.2, 8, 24],
+    L1: [0.4, 0.8, 1.6, 4, 10, 32],
+    L3: [0.4, 0.8, 1.2, 3.2, 8, 24],
+    L4: [0.4, 0.4, 1.2, 2.8, 6, 20],
   };
   const NAMES = {
     M: "Multi", BS: "FS scatter", ES: "XFS scatter",
@@ -38,8 +31,7 @@ const RULES = (() => {
     L1: "Fleur-de-lis", L2: "Mardi Gras Beads", L3: "Crawfish", L4: "King Cake", L5: "Candle",
     L6: "Skeleton Key", L7: "Doubloon", L8: "Tarot Card", L9: "Bone", L10: "Gas Lamp",
   };
-  const ORDER = ["H1", "H2", "H3", "H4", "H5", "H6", "H7",
-                 "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10"];
+  const ORDER = ["H1", "H2", "H3", "H4", "H5", "H6", "H7", "L1", "L3", "L4"];   // the 5x5 game's ten paying symbols
   const RTP = "96.70%", MAX_WIN = 10000;
   const MULTI_MIN = 1.25, MULTI_MAX = 1000;
 
@@ -109,7 +101,7 @@ const RULES = (() => {
     const html = `
 <section>
   <h4>${t("About the game")}</h4>
-  <p>${t(`Voodoo on Bourbon is a 7-reel, 7-row video slot with cluster pays and tumbling reels. A cluster is 5 or more matching symbols touching horizontally or vertically, anywhere on the board; every cluster on the board pays, winning symbols are removed, new ones drop in, and the new board is paid again. The values below are multiples of the total bet, shown at your current bet of ${fmt(bet)}.`)}</p>
+  <p>${t(`Voodoo on Bourbon is a 5-reel, 5-row video slot with cluster pays and tumbling reels. A cluster is 5 or more matching symbols touching horizontally or vertically, anywhere on the board; every cluster on the board pays, winning symbols are removed, new ones drop in, and the new board is paid again. The values below are multiples of the total bet, shown at your current bet of ${fmt(bet)}.`)}</p>
   <div class="kvgrid">
     <div><span>RTP</span><b>${RTP}</b><small>${t("every mode")}</small></div>
     <div><span>${t("Max win")}</span><b>${x(MAX_WIN)}</b><small>${t("of the total bet")} · ${money(MAX_WIN)}</small></div>
@@ -132,7 +124,7 @@ const RULES = (() => {
 
 <section>
   <h4>${t("Paytable")}</h4>
-  <p class="fine">${t("Pays by cluster size: 5 / 6 / 7-8 / 9-11 / 12-15 / 16 or more matching symbols touching horizontally or vertically. Multiples of the total bet and the amount at your current bet. There is no wild symbol.")}</p>
+  <p class="fine">${t("Pays by cluster size: 5 / 6 / 7-8 / 9-11 / 12-15 / 16-25 matching symbols touching horizontally or vertically. Multiples of the total bet and the amount at your current bet. There is no wild symbol.")}</p>
   <div class="paytable">${payRows}</div>
 </section>
 

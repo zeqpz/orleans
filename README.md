@@ -3,8 +3,13 @@
 A New Orleans voodoo reskin of the Smukiez slot for [Stake Engine](https://stake-engine.com): Bourbon Street at
 night, drawn in a Rick and Morty cartoon style. It starts from the newest engine.io build of
 [zeqpz/slotsgame](https://github.com/zeqpz/slotsgame) (`main` b8a6f8d: front end, `engine/games/smukiez_v5` and math v5
-with Bonus Boost). The old `beta/` and `live-pull/` folders were left out. **The math is unchanged:** a 7x7 board with
-cluster pays, tumbles, Multis, FS / XFS scatters and the Bonus Boost mode, RTP 96.5-96.7%, max 10,000x.
+with Bonus Boost). The old `beta/` and `live-pull/` folders were left out. The board started as that 7x7 game; since
+2026-11-09 it is **5x5**, on Tipsy Harvest's 5x5 math (`math-sdk/games/voodoo_5x5`, copied from zeqpz/fallslotsga's
+`tipsy_5x5` without its Cork Storm mode): cluster pays, tumbles, Multis, FS / XFS scatters and the Bonus Boost mode,
+ten paying symbols (H1-H7, fleur-de-lis, crawfish, king cake), RTP 96.7%, max 10,000x. Bigger cells (164 x 140, same
+board footprint) make every icon 43% larger. The four big books are over GitHub's file limit: they are built locally
+(`run.py --base 1000000 --bonus 100000 --extreme 100000 --boost 500000 --optimize --checks`, then
+`tools/finish_luts.py`) and uploaded to engine.io from disk.
 
 ## What changed
 
@@ -77,4 +82,4 @@ first run decompresses the books, which takes about 30 s. The Claude preview lau
 
 - Doc is an original character in the "voodoo showman" archetype: top hat, plum tailcoat, skull cane, green magic.
   He is not a copy of any film character.
-- The upload set for Stake is unchanged: `math-sdk/games/smukiez_tag_run/library/publish_files/` plus the front end.
+- The upload set for Stake: `math-sdk/games/voodoo_5x5/library/publish_files/` plus the front end.

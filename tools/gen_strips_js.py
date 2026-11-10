@@ -10,7 +10,7 @@ import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REELS = os.path.join(ROOT, "math-sdk", "games", "smukiez_tag_run", "reels")
+REELS = os.path.join(ROOT, "math-sdk", "games", "voodoo_5x5", "reels")
 OUT = os.path.join(ROOT, "frontend", "strips.js")
 SHIPPED = ["BR0", "BRE", "FR0", "FRE"]
 
@@ -24,7 +24,7 @@ def read_strip(name):
 
 sets = {name: read_strip(name) for name in SHIPPED}
 with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
-    fh.write("/* Reel strips, generated from math-sdk/games/smukiez_tag_run/reels/*.csv by\n")
+    fh.write("/* Reel strips, generated from math-sdk/games/voodoo_5x5/reels/*.csv by\n")
     fh.write("   tools/gen_strips_js.py. The RGS serves no strips endpoint, so the blurred\n")
     fh.write("   spin-through ships with the client. */\n")
     fh.write("const STRIP_SETS = " + json.dumps(sets, separators=(",", ":")) + ";\n")

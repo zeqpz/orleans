@@ -1,0 +1,118 @@
+{
+    "workingName": "Voodoo on Bourbon 5x5",
+    "frontendConfig": {
+        "file": "fe_config.json",
+        "sha256": "051de72345aef35fae8829a52364c1e167ce3c3e3664eb1b73b89b8feb76ae5c"
+    },
+    "gameID": "voodoo_5x5",
+    "rtp": 96.7,
+    "betDenomination": 1000,
+    "minDenomination": 10,
+    "providerNumber": 0,
+    "standardForceFile": {
+        "file": "force.json",
+        "sha256": "c31d65b9809ceeca25ea6367a106275dbd54a48c2f64861d4b2d368f8784ed25"
+    },
+    "bookShelfConfig": [
+        {
+            "name": "base",
+            "tables": [
+                {
+                    "file": "lookUpTable_base_0.csv",
+                    "sha256": "544db29edb2f3a81bb9d439b8a9f97c421fdd4f88a754d8c2425e24728fda46f"
+                }
+            ],
+            "cost": 1.0,
+            "rtp": 0.967,
+            "std": 11.24,
+            "bookLength": 1000000,
+            "feature": true,
+            "autoEndRoundDisabled": false,
+            "buyBonus": false,
+            "maxWin": 10000.0,
+            "booksFile": {
+                "file": "books_base.jsonl.zst",
+                "sha256": "8e2277c80b8f8a8fdf7f51e8bcaa0ba4aad74593c11f6841ce60b174b1ed415e"
+            },
+            "forceFile": {
+                "file": "force_record_base.json",
+                "sha256": "98cb7c9582c91850a9afa24a65afba72397e1ad77ec766777d1249bf8102f98e"
+            }
+        },
+        {
+            "name": "bonus",
+            "tables": [
+                {
+                    "file": "lookUpTable_bonus_0.csv",
+                    "sha256": "f775cc28bc362dea845b70d51099c9cce459177f6c0b79611e93f721415ea298"
+                }
+            ],
+            "cost": 100.0,
+            "rtp": 0.967,
+            "std": 1.66,
+            "bookLength": 100000,
+            "feature": false,
+            "autoEndRoundDisabled": false,
+            "buyBonus": true,
+            "maxWin": 10000.0,
+            "booksFile": {
+                "file": "books_bonus.jsonl.zst",
+                "sha256": "c9cbf18db27c1272c18595b6041625fdb208fecf36615fb716238fa6f8c6424b"
+            },
+            "forceFile": {
+                "file": "force_record_bonus.json",
+                "sha256": "d865680a5db0feae48ac9cc289b7c1b804bfd0786a746012a685a0b2fd979401"
+            }
+        },
+        {
+            "name": "extremebonus",
+            "tables": [
+                {
+                    "file": "lookUpTable_extremebonus_0.csv",
+                    "sha256": "4c47b54021120e3bcfc097bab8b9e72e8fa1bd6fccdc8e2de79305c77b2a21c8"
+                }
+            ],
+            "cost": 400.0,
+            "rtp": 0.967,
+            "std": 1.21,
+            "bookLength": 100000,
+            "feature": false,
+            "autoEndRoundDisabled": false,
+            "buyBonus": true,
+            "maxWin": 10000.0,
+            "booksFile": {
+                "file": "books_extremebonus.jsonl.zst",
+                "sha256": "f7ef333aad721fddb8004bf2177e0feed14ef07e9de5ee842b0a3a7f9052ca25"
+            },
+            "forceFile": {
+                "file": "force_record_extremebonus.json",
+                "sha256": "723914ee7e7594dbe7fc0607a57f597b66c0409688a3ec74b13b64a5a2abdc0c"
+            }
+        },
+        {
+            "name": "boost",
+            "tables": [
+                {
+                    "file": "lookUpTable_boost_0.csv",
+                    "sha256": "5361c27070cd87c35d834a2b40bbc73dc14e6c01905a1e35afe0321c8601e3c2"
+                }
+            ],
+            "cost": 1.25,
+            "rtp": 0.967,
+            "std": 11.1,
+            "bookLength": 500000,
+            "feature": true,
+            "autoEndRoundDisabled": false,
+            "buyBonus": false,
+            "maxWin": 10000.0,
+            "booksFile": {
+                "file": "books_boost.jsonl.zst",
+                "sha256": "921ddb726946239bfc64669de42de3913c4dad27f776f42e0fa5fea1ae1be7bd"
+            },
+            "forceFile": {
+                "file": "force_record_boost.json",
+                "sha256": "16deab1d30fe568022a55a54731a15526762788d327ebdba93d651ba7992a757"
+            }
+        }
+    ]
+}

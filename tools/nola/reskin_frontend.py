@@ -542,6 +542,21 @@ rep('  const gone = () => !chip.isConnected;\n  const bye = () => chip.remove();
 rep("    await flyWinToHud(chip);                  // pulled down into the bar's WIN, which pops and counts up\n    landed();",
     "    await flyWinToHud(chip);                  // pulled down into the bar's WIN, which pops and counts up\n    bumpRoundWin(final, hudGen);              // ...at once, by this cluster's amount\n    landed();")
 
+rep('       Sized for the 7x7 cluster board: seven of these, gaps included, take about the room\n       the old 5x4 board did. */\n    --cell-w: 115px;   /* 20% up from 96 / 82 / 6 on 2026-10-06: the board fills more of the middle */\n    --cell-h: 98px;',
+    "       Sized for the 5x5 cluster board (2026-11-09, from Tipsy Harvest): five of these, gaps included, take the\n       same 847 x 728 px the 7x7 board's 115 x 98 cells did, so the board and its iron frame keep their size and\n       every icon is 43% bigger. */\n    --cell-w: 164px;\n    --cell-h: 140px;")
+
+rep('const FLAT = {};   // the flat icon pictures, kept: the paytable, the shards of a blown-out tile and the fallback all draw them',
+    '// The 5x5 game (math voodoo_5x5, 2026-11-09) keeps three lows - fleur-de-lis, crawfish, king cake: the others never\n// land, so they are not loaded, not drawn in a celebration\'s shower and not offered anywhere (their art stays in assets/)\nfor (const k of ["L2", "L5", "L6", "L7", "L8", "L9", "L10"]) delete SYM[k];\nconst FLAT = {};   // the flat icon pictures, kept: the paytable, the shards of a blown-out tile and the fallback all draw them')
+
+rep('const REELS = 7, ROWS = 7;   // the 7x7 cluster board; the events still pad every reel by one row top and bottom',
+    'const REELS = 5, ROWS = 5;   // the 5x5 cluster board (2026-11-09, math games/voodoo_5x5; was 7x7); the events still pad every reel by one row top and bottom')
+
+rep('const FALLBACK_STRIP = ["L1", "H4", "L3", "H1", "L5", "H3", "L2", "H5", "L4", "H2"];',
+    'const FALLBACK_STRIP = ["L1", "H4", "L3", "H1", "L4", "H3", "L1", "H5", "L3", "H2"];   // 5x5 symbol set: no L2 / L5-L10')
+
+rep('  const pool = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "H1", "H2", "H3", "H4", "L1", "L3", "L5", "L7"];',
+    '  const pool = ["L1", "L3", "L4", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "L1", "L3", "L4"];   // only the 5x5 game\'s symbols')
+
 # ------------------------------------------------------------------ the voodoo look (appended to the stylesheet)
 CSS = '''
   /* ---- Voodoo on Bourbon (2026-11-08) ---------------------------------------------------------------
@@ -695,6 +710,10 @@ CSS = '''
 
   /* the multiplier on the win figure glows in its own potion colour (placeWinChip sets it), not white on green */
   .winpop .wpx { text-shadow: 0 0 6px currentColor, 0 0 16px currentColor, 0 3px 0 rgba(0, 0, 0, .5); }
+
+  /* the 5x5 board (2026-11-09): cells 164 x 140 (were 115 x 98), so the Multi numerals grow with them (x1.43) */
+  .multlayer .gmult { font-size: calc(60px * var(--shrink, 1)); }
+  .cell.booster .multface .mv { font-size: 43px; }
 '''
 rep("</style>\n</head>", CSS + "</style>\n</head>")
 
@@ -719,6 +738,19 @@ RULES = [
     ('    ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"],',
      '    ["not a buy", "not a one-off"], ["costs", "takes"],   // (social review 2026-11-09: "costs x1.25", "not a get")\n'
      '    ["buy bonus", "get bonus"], ["bonus buy", "bonus"], ["total bet", "total play"],'),
+    # the 5x5 board (2026-11-09): math-sdk/games/voodoo_5x5's paytable, ten paying symbols
+    ('const TIERS = ["5", "6", "7-8", "9-11", "12-15", "16+"];',
+     'const TIERS = ["5", "6", "7-8", "9-11", "12-15", "16-25"];'),
+    ('    L1: [0.8, 1.6, 3.2, 8, 20, 60],\n    L2: [0.8, 1.6, 3.2, 8, 20, 60],\n    L3: [0.8, 1.2, 2.4, 6, 16, 48],\n    L4: [0.4, 1.2, 2.4, 6, 16, 48],\n    L5: [0.4, 0.8, 2, 4.8, 12, 40],\n    L6: [0.4, 0.8, 2, 4.8, 12, 40],\n    L7: [0.4, 0.8, 1.6, 4, 10, 32],\n    L8: [0.4, 0.8, 1.6, 4, 10, 32],\n    L9: [0.4, 0.8, 1.2, 3.2, 8, 24],\n    L10: [0.4, 0.8, 1.2, 3.2, 8, 24],',
+     '    L1: [0.4, 0.8, 1.6, 4, 10, 32],\n    L3: [0.4, 0.8, 1.2, 3.2, 8, 24],\n    L4: [0.4, 0.4, 1.2, 2.8, 6, 20],'),
+    ('  const ORDER = ["H1", "H2", "H3", "H4", "H5", "H6", "H7",\n                 "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "L10"];',
+     '  const ORDER = ["H1", "H2", "H3", "H4", "H5", "H6", "H7", "L1", "L3", "L4"];   // the 5x5 game\'s ten paying symbols'),
+    ('is a 7-reel, 7-row video slot',
+     'is a 5-reel, 5-row video slot'),
+    ('Pays by cluster size: 5 / 6 / 7-8 / 9-11 / 12-15 / 16 or more matching symbols',
+     'Pays by cluster size: 5 / 6 / 7-8 / 9-11 / 12-15 / 16-25 matching symbols'),
+    ('Every number here mirrors math-sdk/games/smukiez_tag_run/game_config.py;',
+     'Every number here mirrors math-sdk/games/voodoo_5x5/game_config.py (the 5x5 board);'),
 ]
 # rgs.js (review 2026-11-09): an amount too small for even 4 decimals printed as a bare "0."
 RGS = [

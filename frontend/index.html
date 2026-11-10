@@ -60,10 +60,11 @@
     --char-inset: -3vw;      /* how far in from each edge they stand; negative pushes them out */
     /* Board size lives here so the spin overlay's CELL_STEP can be derived from the same
        numbers — hardcoding it separately means the reels mis-align the moment a cell resizes.
-       Sized for the 7x7 cluster board: seven of these, gaps included, take about the room
-       the old 5x4 board did. */
-    --cell-w: 115px;   /* 20% up from 96 / 82 / 6 on 2026-10-06: the board fills more of the middle */
-    --cell-h: 98px;
+       Sized for the 5x5 cluster board (2026-11-09, from Tipsy Harvest): five of these, gaps included, take the
+       same 847 x 728 px the 7x7 board's 115 x 98 cells did, so the board and its iron frame keep their size and
+       every icon is 43% bigger. */
+    --cell-w: 164px;
+    --cell-h: 140px;
     --cell-gap: 7px;
   }
   @font-face {
@@ -3284,6 +3285,10 @@
 
   /* the multiplier on the win figure glows in its own potion colour (placeWinChip sets it), not white on green */
   .winpop .wpx { text-shadow: 0 0 6px currentColor, 0 0 16px currentColor, 0 3px 0 rgba(0, 0, 0, .5); }
+
+  /* the 5x5 board (2026-11-09): cells 164 x 140 (were 115 x 98), so the Multi numerals grow with them (x1.43) */
+  .multlayer .gmult { font-size: calc(60px * var(--shrink, 1)); }
+  .cell.booster .multface .mv { font-size: 43px; }
 </style>
 </head>
 <body>
@@ -3478,11 +3483,14 @@ const SYM = {
   L9: { label: "BONE",  sub: "",           cls: "low",  img: "assets/flat/L9.webp" },
   L10:{ label: "LAMP",  sub: "GAS",        cls: "low",  img: "assets/flat/L10.webp" },
 };
+// The 5x5 game (math voodoo_5x5, 2026-11-09) keeps three lows - fleur-de-lis, crawfish, king cake: the others never
+// land, so they are not loaded, not drawn in a celebration's shower and not offered anywhere (their art stays in assets/)
+for (const k of ["L2", "L5", "L6", "L7", "L8", "L9", "L10"]) delete SYM[k];
 const FLAT = {};   // the flat icon pictures, kept: the paytable, the shards of a blown-out tile and the fallback all draw them
 for (const [k, def] of Object.entries(SYM)) {   // pre-warm icon cache
   if (def.img) { const i = new Image(); i.src = def.img; FLAT[k] = i; }
 }
-const REELS = 7, ROWS = 7;   // the 7x7 cluster board; the events still pad every reel by one row top and bottom
+const REELS = 5, ROWS = 5;   // the 5x5 cluster board (2026-11-09, math games/voodoo_5x5; was 7x7); the events still pad every reel by one row top and bottom
 // Cost multipliers mirror index.json. The RGS applies them server-side (it debits
 // amount x cost); these are only so the buy buttons can show the right price.
 const MODE_COST = { base: 1, bonus: 100, extremebonus: 400, boost: 1.25 };   // boost: Bonus Boost, free spins 1.6x as likely (math 2026-11-04)
@@ -5038,7 +5046,7 @@ function stripsFor(gameType) {
   return (typeof STRIP_SETS !== "undefined" && STRIP_SETS[key]) || null;
 }
 
-const FALLBACK_STRIP = ["L1", "H4", "L3", "H1", "L5", "H3", "L2", "H5", "L4", "H2"];
+const FALLBACK_STRIP = ["L1", "H4", "L3", "H1", "L4", "H3", "L1", "H5", "L3", "H2"];   // 5x5 symbol set: no L2 / L5-L10
 
 // Two Crew Leaders down and a reel held for the third: the board leans in. It eases up a touch
 // bigger, about a point part way toward the held column, over the rest of the reveal - full
@@ -8460,7 +8468,7 @@ if (window.ResizeObserver) {
 
 buildBoard();
 {
-  const pool = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "H1", "H2", "H3", "H4", "L1", "L3", "L5", "L7"];
+  const pool = ["L1", "L3", "L4", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "L1", "L3", "L4"];   // only the 5x5 game's symbols
   let seed = 20261109;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
   const grid = {};
