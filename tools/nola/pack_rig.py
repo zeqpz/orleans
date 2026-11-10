@@ -1,7 +1,8 @@
 """Pack Doc's live rig for the game: art/blender/chars/doc_rig/rig/ (from tools/nola/blender/doc_rig.py, export step)
 -> frontend/assets/chars/doc/rig/:
-  rig.json        the rig: bones, parts (mesh offsets into geo.bin), faces, fx kinds, shoes, clips (face track, wisp
-                  alpha, fx draws, offset into clips.bin) and, per density, its atlas pages and where each texture sits
+  rig.json        the rig: bones, parts (mesh offsets into geo.bin), faces (a whole head each), fx kinds, shoes, the
+                  flame's bone, the idle's pace, clips (face track, the flame's strength, fx draws, offset into
+                  clips.bin) and, per density, its atlas pages and where each texture sits
   geo.bin         every part's mesh (as exported)
   clips.bin       every clip's bone transforms, back to back (float32: frames x bones x 6)
   d<NNN>/p<k>.webp the atlas pages at each density (texels per art px: .5, .75, 1, 1.5), parts + reaction faces +

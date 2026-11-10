@@ -39,24 +39,40 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
 3. **Background**: `bg_layers.py` aligns the lit painting to the lights-off plate and splits the lights into
    additive layers (hand-placed regions). `bg_export.py` writes the 4K plate, the layers, the fog bands and the star
    field (`frontend/assets/bg/`).
-4. **Character layers**: `doc_layers.py` cuts out the cane and palm wisp, aligns and composites each face, then
-   upscales to 4K (`art/nola-src/doc/`). `doc_parts.py` then cuts Doc into his rig's layered parts
-   (`art/nola-src/doc_parts/`: coat panel, both legs, cane, head, body, hat, both arms, wisp, and a patch per reaction
-   face), painting in what each part hides (the thighs under the coat, the panel behind the legs, the neck under the
-   collar, a scalp under the hat). `doc_parts.py --quick` writes only `_debug.png`, the cuts tinted.
+4. **Character parts**: Doc is drawn piece by piece. The first pass (`doc_layers.py`, `doc_parts.py`) cut ONE 1024 x 1536
+   drawing, enlarged 4x, into parts and smeared in what each part hid; that set is kept in
+   `art/nola-src/doc_parts_v1/` as the layout. `doc_regen.py` (2026-11-09) has the image model redraw every part on
+   its OWN canvas from that layout - head, hat, body, each arm, each leg, cane - so each is crisp at several times the
+   detail and its hidden areas are real drawing (hair under the hat, the hat's whole brim, a round cap on each
+   shoulder, trousers up to the waist), plus the seven reaction faces as whole heads:
+   `doc_regen.py gen` (one OpenRouter call a part), `faces`, then `fit` (lays each over its old part by SIFT + RANSAC,
+   legs and cane box on box with the legs sheared to their hip and hem, opens the collar's neck hole) and `fitfaces`
+   -> `art/nola-src/doc_parts/` (+ `parts.json`). `doc_regen/_sheet.png` shows old against new.
 5. **Blender** (5.2.3; builds run live through the MCP or in the background):
    - `blender/symanim.py <ID>` builds each symbol's scene: idle, land, hit and multi clips on a bone-bent mesh plus
      effect sprites from `make_fx_sprites.py`. `blender/render_all.sh` renders all 20, 5 at a time (about 5 minutes).
-   - `blender/doc_rig.py` is Doc's live rig: a mesh per part, 35 deforming bones (fingers on both hands, two-bone coat tails,
-     IK legs that keep the shoes planted, an IK cane arm that keeps the hand on the knob and the tip on the pavement,
-     a hat that lifts off, a two-bone wisp), springs for the head, hat, feather, cravat and coat tails, and his 10
-     clips. `-- build,export,render` writes the rig the game plays (`art/blender/chars/doc_rig/rig/`) and QA renders.
-     The game poses it live (`frontend/charrig.js`) with the bones eased between Blender's frames, so it is smooth at
-     any refresh rate; `pack_rig.py` packs it (atlases at 4 densities, ~1.4 MB for the one a screen loads).
-     (`blender/doc.py` is the old baked-frame rig, kept for reference.)
+   - `blender/doc_rig.py` is Doc's live rig: a mesh per part, 49 deforming bones - a four-bend trunk (hips that tilt,
+     two spine bones, a chest that breathes), a clavicle a shoulder, a `face` bone that slides his features inside
+     the skull (a head turn and a nod), two-jointed fingers, IK legs with feet that pivot on ball or heel without
+     sliding, an IK cane arm (the planted cane leans up to 3 degrees to keep his hand on it, then comes up with the
+     hand), four-bone coat tails run as CLOTH (inertia, drag, a breeze that travels down the hem, flaring when he
+     drops) and an `orb` bone the flame floats on. His 10 clips are keyed pose to pose on curves that flow through
+     the keys (`kf`: shape-preserving cubic, `"i"` keys for impacts) with overlap down every chain, the head levelled
+     against the trunk on a spring, and every gesture played at the size the screen needs (`ACT`).
+     `-- build,export,render [clips] [step]` writes the rig the game plays (`art/blender/chars/doc_rig/rig/`) and QA
+     renders; `-- render rom` renders a range-of-motion test for looking at seams.
+     The game poses it live (`frontend/charrig.js`), the bones eased between Blender's frames, so it is smooth at any
+     refresh rate. The idle never rests (two breaths and one shift of weight in 8 s) and a reaction cuts in from any
+     frame, the poses eased across. The green flame is not a picture: `makeFlame` in charrig.js draws it live (a
+     shader flame over an orb, a halo, embers) on a spring that trails the `orb` bone, so it floats over his palm,
+     lags the hand, leans away from its motion and never repeats. `pack_rig.py` packs the rig (atlases at 4
+     densities, about 1.5 MB for the one a screen loads). (`blender/doc.py` is the old baked-frame rig.)
    - QA: `qa_sym.py all` checks loop seams, the hand-back to the rest pose and alpha at the frame edge.
      `qa_doc_rig.py` checks Doc's renders: seams opening between parts, the soles' line, the frame border, the idle's
      loop, and a zoom sheet per clip whose crops ride the joints (`art/blender/chars/doc_rig/qa/`).
+     `qa_doc_motion.py` checks his motion from the exported numbers: pops (a frame jerked far harder than its
+     neighbours, other than the accents that are meant to hit), each clip starting and ending on the rest pose, feet
+     that slide or sink, and points that hold dead still.
    - Packing: `tools/blender/pack_frames.py all` (14-unit frame) and `tools/blender/pack_chars.py doc`.
 6. **Front end**: `tools/nola/edit.py` applies a later edit to index.html and records it in reskin_frontend.py. `reskin_frontend.py` applies every edit to `frontend/index.html` and `rules.js` as exact
    replacements, so a changed base fails loudly. Run it on a fresh base copy.
@@ -68,7 +84,9 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
 Browser tests (headless Playwright, with the mock RGS running): `node tools/nola/qa_browser.js` checks the live
 layers, the character and the console; `node tools/nola/qa_replay.js` replays a round with a Multi and captures the hex-away;
 `node tools/nola/qa_rig.js` poses every clip of Doc's live rig in the game and times it; `node tools/nola/qa_stand.js`
-checks at 15 screen sizes that his soles are on the painted sidewalk (placeScenery/standOnWalk in index.html).
+checks at 15 screen sizes that his soles are on the painted sidewalk (placeScenery/standOnWalk in index.html);
+`node tools/nola/qa_doc_live.js` screenshots him and his live flame in the game (live frames, posed clips, a reaction
+cutting in) and prints any shader error.
 
 ## Run it locally
 

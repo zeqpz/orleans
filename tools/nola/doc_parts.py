@@ -1,4 +1,7 @@
-"""Cut Doc (the voodoo showman) into the layered parts of his rig -> art/nola-src/doc_parts/ (4K, 2731 x 4096 canvas):
+"""SUPERSEDED 2026-11-09 by tools/nola/doc_regen.py, which redraws every part on its own canvas (this cut is its layout,
+kept in art/nola-src/doc_parts_v1/). Running this again would overwrite the redrawn parts in doc_parts/.
+
+Cut Doc (the voodoo showman) into the layered parts of his rig -> art/nola-src/doc_parts/ (4K, 2731 x 4096 canvas):
 
   back to front:  coat_back  the dark coat panel seen between his legs (painted on behind the legs)
                   leg_r      his left leg (the viewer's right): trouser, spat and shoe, the thigh painted up under the coat

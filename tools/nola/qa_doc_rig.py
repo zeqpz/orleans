@@ -21,7 +21,7 @@ CY = 768 + 30                          # the art y at the render's centre (the c
 JOINTS = {"shoulder L": ((392, 428), "upper_l"), "elbow L": ((312, 652), "fore_l"), "cane hand": ((200, 800), "hand_l"),
           "shoulder R": ((606, 440), "upper_r"), "elbow R": ((684, 652), "fore_r"), "open hand": ((880, 450), "hand_r"),
           "neck": ((500, 372), "neck"), "hat": ((490, 150), "hat"), "hips": ((512, 700), "hips"),
-          "tail L": ((380, 980), "tail_l2"), "tail R": ((650, 980), "tail_r2"), "knee L": ((414, 1060), "shin_l"),
+          "tail L": ((368, 1006), "tail_l4"), "tail R": ((671, 1011), "tail_r4"), "knee L": ((414, 1060), "shin_l"),
           "knee R": ((606, 1060), "shin_r"), "foot L": ((330, 1460), "foot_l"), "foot R": ((690, 1460), "foot_r")}
 SEAM = 3000                            # a new enclosed gap smaller than this (render px) is a seam opening; bigger
                                        # ones are background closed in by a limb (the arm, the cane and a leg)
@@ -48,6 +48,7 @@ def main():
     rest_holes = ndimage.binary_dilation(holes(rest[..., 3]), iterations=3)
     rig = json.load(open(os.path.join(RIG, "rig.json")))
     B = len(rig["bones"])
+    clips = [c for c in clips if c in rig["clips"]]       # (a range-of-motion render has no clip in the game)
     report = []
     for c in clips:
         fs = sorted(glob.glob(os.path.join(REN, c, "*.png")))
