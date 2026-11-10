@@ -265,10 +265,17 @@
     const B = man.bones.length, fps = man.fps, has = clip => !!man.clips[clip];
     if (!has("idle")) { console.warn("character rig has no idle:", name); return null; }
 
+    // His canvas runs past his box at the sides and above it (.charstage, sized in the stylesheet): the flame's
+    // glow, its embers and a reaction's rings were cut off square on the box's edge (owner, 2026-11-09: "the glow
+    // is leaving their box / getting cut off on the edges"). He is still sized by the box and stands on its
+    // bottom edge - only the room he is drawn in is bigger.
+    const stageEl = document.createElement("div");
+    stageEl.className = "charstage";
+    root.appendChild(stageEl);
     const app = new PIXI.Application();
-    await app.init({ backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: dpr, resizeTo: root });
+    await app.init({ backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: dpr, resizeTo: stageEl });
     app.ticker.maxFPS = CHAR_FPS;
-    root.appendChild(app.canvas);
+    stageEl.appendChild(app.canvas);
     // the stage is drawn only when the pose changes (a figure resting between idle cycles costs nothing)
     let dirty = true;
     const touch = () => { dirty = true; };
@@ -383,10 +390,10 @@
     // ---- the figure on its canvas: soles on the bottom edge, centred, scaled so its standing height fills the box
     // the CSS sizes (less the headroom kept free above for a raised arm, smoke, a lifted hat)
     const fit = () => {
-      const w = app.renderer.width, h = app.renderer.height;
+      const w = app.screen.width, h = app.screen.height;
       if (!w || !h) return;
       actor.pivot.set(man.cx, man.ground_y);
-      actor.scale.set(h / headroom() / man.rest_height);
+      actor.scale.set((root.clientHeight || h) / headroom() / man.rest_height);   // by his BOX, not the wider canvas
       actor.position.set(w / 2, h);
       touch();
     };

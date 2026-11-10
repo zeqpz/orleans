@@ -5,6 +5,9 @@ chain of bones (squash and stretch, lean, bend, wobble); a glow halo of its silh
 effect sprites (art/nola-src/fx) are animated around it. Each symbol has its own idle, land, hit and multi.
 Camera: orthographic, 14 units across, looking along +y, the icon centred (tools/blender/pack_frames.py's frame).
 
+BS and ES (the FS / XFS scatters) are NOT built here any more: they are rigs of separate pieces, symparts.py
+(which uses this module's scene, materials, effect pools and render). Their rows in P below are unused.
+
 Runs in the user's live Blender over the MCP socket (build + preview), or in the background for the renders:
   blender.exe -b --factory-startup --python tools/fall/blender/symanim.py -- <ID> [build,render]
 -> art/blender/symbols/<ID>.blend, art/blender/renders/<ID>/<clip>/####.png (512 px, RGBA)"""

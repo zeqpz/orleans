@@ -233,7 +233,7 @@
        the cartoon's arms off. No bottom mask either: it was fading out their feet. */
     height: calc(var(--char-height) * var(--char-stretch) * var(--char-headroom));
     width: calc(var(--char-height) * 0.94);
-    overflow: hidden; pointer-events: none; user-select: none;
+    overflow: visible; pointer-events: none; user-select: none;   /* (his canvas runs past the box: .charstage) */
     opacity: 1;   /* solid: the owner did not want them see-through (they were .78, .5 on laptops) */
     transform-origin: 50% 100%;   /* they pop up off their feet, not out of the middle */
     translate: 0 calc(-1 * var(--char-lift));   /* the lift; the hop (charbounce) folds it into its own translate */
@@ -248,11 +248,14 @@
   .charshadow { position: fixed; z-index: -1; pointer-events: none; opacity: 0; transition: opacity var(--char-fade, .4s) linear; }
   .charshadow.on { opacity: 1; }
   .charfx canvas { z-index: 1; }
+  /* the room Doc is drawn in: wider than his box and taller above it, so his flame's glow, its embers and a
+     reaction's rings fade out on their own instead of being cut square on the box's edge (charrig.js sizes
+     him by the box and stands him on its bottom edge, which is this one's too) */
+  .charfx .charstage { position: absolute; left: -45%; right: -45%; top: -16%; bottom: 0; pointer-events: none; }
   /* --char-shift centres each character's own column on the union of its clips' content:
      char 1 reaches out to 40% of the frame width, char 2 stays around 49.7% */
   #charfx  { left: var(--char-inset); --char-lift: 7%; --char-depth: 1; }   /* Doc, the voodoo showman, on the left of the board */
-  /* same beat as the wall's bounce — they hop and shake it off on every spin */
-  .charfx.bounce { animation: charbounce .7s cubic-bezier(.22,.9,.32,1.25); }
+  /* (Doc no longer hops or shakes when a spin starts - owner, 2026-11-09; nothing adds .bounce) */
   /* on translate/scale/rotate (transform carries the scene's lean): the lift and the depth
      are folded in, so the hop starts and ends exactly where the figure stands */
   @keyframes charbounce {
@@ -312,7 +315,7 @@
   @media (max-width: 1100px) and (orientation: portrait) {
     :root { --char-height: min(22vh, 48vw); --char-inset: -4vw; --char-drop: -46vh; }
     #charfx { right: -2vw; }   /* the skull's figure sits further out in its box than the boy's: this evens their margins */
-    .charfx { clip-path: inset(0 0 var(--char-cut, 0px) 0); }
+    .charfx { clip-path: inset(-20% -50% var(--char-cut, 0px) -50%); }   /* cut along the board's top only: the glow keeps its room */
     .charshadow { display: none; }   /* their feet are behind the board here */
   }
   /* Landscape phone: short screen, board fitted to the height, room either side again. */
@@ -329,7 +332,7 @@
     opacity: 0; transition: opacity var(--char-fade) linear;
   }
   .charfx canvas.on { opacity: 1; }
-  #bgwall.bounce { animation: bgbounce .7s cubic-bezier(.22,.9,.32,1.25); }
+  /* (the wall's knocks are Knock's springs now, on translate/scale; nothing adds .bounce to it) */
   @keyframes bgbounce {   /* on translate/scale: transform carries the scene's lean */
     0% { translate: 0 0; scale: 1; }
     38% { translate: 0 calc(9px * var(--bounce)); scale: calc(1 + .022 * var(--bounce)); }
@@ -1373,7 +1376,7 @@
     transition: scale .6s cubic-bezier(.2,.9,.3,1.2), transform-origin .6s ease, opacity .25s ease;
   }
   .board.zoomin {
-    scale: 1.045;
+    scale: 1.06;
     transition: scale var(--zoomms, 1.8s) cubic-bezier(.35,0,.65,1), transform-origin var(--zoomms, 1.8s) ease, opacity .25s ease;
   }
   /* the sprayed outline: a thin band that runs 1% to 4% in from the art's edge, so a 10px
@@ -1415,7 +1418,7 @@
   /* the board's pop as a spin starts, on transform alone so it runs on the compositor (a box-shadow
      in the same animation held the whole pop on the main thread, just as the reveal starts); its
      pink flash is a layer of its own (::after) that only fades */
-  .board.pop { animation: boardpop .38s cubic-bezier(.2,.9,.3,1.35); }
+  /* (the board's own move as a spin sets off is Knock.spin now, a spring; .pop only carries the rim's flash) */
   @keyframes boardpop {
     0% { transform: none; }
     40% { transform: scale(calc(1 + .035 * var(--bounce))); }
@@ -1554,13 +1557,13 @@
   .cell.scat.scatland img, .cell.scat.scatland .rigin   { animation: scatland calc(.7s * var(--tempo, 1)) cubic-bezier(.25,.85,.35,1), scatglow 1.7s ease-in-out infinite; }
   .cell.escat.scatland img, .cell.escat.scatland .rigin { animation: scatland calc(.7s * var(--tempo, 1)) cubic-bezier(.25,.85,.35,1), escatglow 1.7s ease-in-out infinite; }
   .cell.scatland { z-index: 2; }
+  /* (2026-11-09: one swell and a soft settle, each turn eased into the next - it was a six-beat rattle. The
+     symbol's own landing clip does the rest: its letters are thrown up off it, the skull ducks, the fire flares.) */
   @keyframes scatland {
-    0%   { transform: scale(1); }
-    18%  { transform: scale(1.34) rotate(-6deg); }
-    34%  { transform: scale(1.1) rotate(5deg); }
-    50%  { transform: scale(1.22) rotate(-3deg); }
-    66%  { transform: scale(1.04) rotate(2deg); }
-    82%  { transform: scale(1.1) rotate(-1deg); }
+    0%   { transform: scale(1); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+    24%  { transform: scale(1.24) rotate(-2.5deg); animation-timing-function: ease-in-out; }
+    50%  { transform: scale(.975) rotate(1.4deg); animation-timing-function: ease-in-out; }
+    74%  { transform: scale(1.045) rotate(-.5deg); animation-timing-function: ease-in-out; }
     100% { transform: scale(1); }
   }
   /* The Multi. Until its art lands it is the sprayed box with its value set into it; the
@@ -1732,14 +1735,15 @@
      fall takes less under the same gravity (setDrop()). --blur (0-1) is how fast it is going as it
      lands, which sets its stretch and the motion blur behind it (.smear); --bnc how hard it lands.
      Survivors that didn't move get no .tdrop at all, so a column never "resets" as a block. */
-  .cell.tdrop { animation: tumbleDrop calc(.5s * var(--tempo, 1) * var(--droptime, 1)) both; transform-origin: 50% 100%; z-index: 2; }
-  .cell.tdrop > .smear { animation: smearDrop calc(.5s * var(--tempo, 1) * var(--droptime, 1)) linear both; }
+  .cell.tdrop { animation: tumbleDrop calc(.64s * var(--tempo, 1) * var(--droptime, 1)) both; transform-origin: 50% 100%; z-index: 2; }
+  .cell.tdrop > .smear { animation: smearDrop calc(.64s * var(--tempo, 1) * var(--droptime, 1)) linear both; }
   @keyframes tumbleDrop {
     0%   { transform: translateY(var(--fall, -120%)) scale(1); animation-timing-function: cubic-bezier(.333, 0, .667, .333); }
-    58%  { transform: translateY(0) scale(calc(1 - .07 * var(--blur, 1)), calc(1 + .1 * var(--blur, 1))); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }   /* contact */
-    66%  { transform: translateY(0) scale(calc(1 + .14 * var(--bnc, 1)), calc(1 - .18 * var(--bnc, 1))); animation-timing-function: cubic-bezier(.3, 0, .5, 1); }   /* squashed flat */
-    80%  { transform: translateY(calc(-8% * var(--bnc, 1))) scale(calc(1 - .03 * var(--bnc, 1)), calc(1 + .045 * var(--bnc, 1))); animation-timing-function: cubic-bezier(.5, 0, .75, 1); }   /* the rebound */
-    90%  { transform: translateY(0) scale(calc(1 + .035 * var(--bnc, 1)), calc(1 - .035 * var(--bnc, 1))); animation-timing-function: ease-out; }   /* a smaller second landing */
+    45%  { transform: translateY(0) scale(calc(1 - .07 * var(--blur, 1)), calc(1 + .1 * var(--blur, 1))); animation-timing-function: cubic-bezier(.2, .7, .4, 1); }   /* contact (DROP_CONTACT) */
+    52%  { transform: translateY(0) scale(calc(1 + .17 * var(--bnc, 1)), calc(1 - .21 * var(--bnc, 1))); animation-timing-function: cubic-bezier(.25, .6, .4, 1); }   /* squashed flat; it springs up, slowing to the top */
+    66%  { transform: translateY(calc(-10% * var(--bnc, 1))) scale(calc(1 - .04 * var(--bnc, 1)), calc(1 + .06 * var(--bnc, 1))); animation-timing-function: cubic-bezier(.5, 0, .8, .5); }   /* the rebound's top; it falls back */
+    79%  { transform: translateY(0) scale(calc(1 + .055 * var(--bnc, 1)), calc(1 - .055 * var(--bnc, 1))); animation-timing-function: cubic-bezier(.3, .6, .5, 1); }   /* a smaller second landing */
+    90%  { transform: translateY(0) scale(calc(1 - .014 * var(--bnc, 1)), calc(1 + .018 * var(--bnc, 1))); animation-timing-function: ease-in-out; }   /* a last breath out */
     100% { transform: none; }
   }
   /* the reveal: the column on the board drops out through the floor under the same gravity (the
@@ -1764,8 +1768,8 @@
   }
   @keyframes smearDrop {
     0%    { opacity: 0; transform: scaleY(.25); }
-    57.5% { opacity: var(--blur, 1); transform: scaleY(calc(.25 + .85 * var(--blur, 1))); }
-    58%   { opacity: 0; transform: scaleY(.25); }
+    44.5% { opacity: var(--blur, 1); transform: scaleY(calc(.25 + .85 * var(--blur, 1))); }
+    45%   { opacity: 0; transform: scaleY(.25); }
     100%  { opacity: 0; transform: scaleY(.25); }
   }
   @keyframes smearOut {
@@ -3833,6 +3837,10 @@ const SYM_DENSITY = [1.6, 2.4, 3.2];   // sheet px per rig unit (an icon is 100 
 const SYM_HEADROOM = 1.25;            // sheet px per screen px at rest: crisp at rest, through the lit pop and the hit
 const SYM_IDLE_STAGGER = 2400;        // ms over which a resting board's idles start up, each symbol at its own moment
 const SYM_IDLE_REST = [8000, 20000];   // ms an icon rests between its idle cycles, at random (the first 0 to the most after it lands)
+// FS and XFS never rest (owner, 2026-11-09: "we want their idle animation to stand out more"): their idle - the
+// letters hopping in turn, the ball, the beads, the skull peeking, the fire - loops at its own full speed for as
+// long as they are on the board, and every other clip of theirs hands straight back to it
+const SYM_ALWAYS = new Set(["BS", "ES"]);
 const SYM_IDLE_MAX_SHARE = .12;       // at most this share of the board mid-idle at once: a start over it waits a moment
 const SYM_IDLE_RATE = .575;             // the idles play at this share of their frame rate: slow and barely noticed (owner, 2026-11-04); land/hit/multi at their own speed
 const SYMF = { man: null, density: "d16", sheets: new Map(), k: 1 };   // sheets: "<ID>_<clip>" -> { img, ok, ready, frames }
@@ -4019,6 +4027,11 @@ function symStep(now) {
       else {
         // a clip played through: back on the rest pose (every clip ends on it), and its next idle cycle a
         // while off, on its own random clock (owner, 2026-11-04: idles now and then, never in step)
+        if (SYM_ALWAYS.has(el._name) && SYMF.sheets.get(el._name + "_idle")?.ok) {   // a bonus symbol goes straight back to its idle
+          Object.assign(el, { _clip: "idle", _t0: now, _rate: 1, _loop: true });
+          symDraw(el, "idle", 0);
+          continue;
+        }
         const landed = el._clip === "land";
         symPlaying.delete(el); el._clip = null; symRest(el);
         el._idleAt = now + (landed ? Math.random() * SYM_IDLE_REST[1] : SYM_IDLE_REST[0] + Math.random() * (SYM_IDLE_REST[1] - SYM_IDLE_REST[0]));
@@ -4092,11 +4105,12 @@ function symIdleTick() {
   if (document.hidden || REDUCED_MOTION) return;
   const now = performance.now();
   let idling = 0;
-  for (const el of symPlaying) if (el._clip === "idle") idling++;
+  for (const el of symPlaying) if (el._clip === "idle" && !SYM_ALWAYS.has(el._name)) idling++;
   const cap = Math.max(1, Math.round(REELS * ROWS * SYM_IDLE_MAX_SHARE));
   for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++) {
     const cell = cellEls[r][y], el = rigOf(cell);
     if (!el || symPlaying.has(el) || !SYMF.sheets.get(el._name + "_idle")?.ok) continue;
+    if (SYM_ALWAYS.has(el._name)) { rigPlay(cell, "idle", { loop: true, speed: 1 / SYM_IDLE_RATE }); continue; }   // never at rest, never counted
     if (!el._idleAt) el._idleAt = now + Math.random() * SYM_IDLE_REST[1];   // a new icon: its first cycle somewhere in the first rest
     else if (now >= el._idleAt) {
       if (idling >= cap) { el._idleAt = now + 500 + Math.random() * 1500; continue; }   // enough of the board moving: in a moment
@@ -4120,7 +4134,10 @@ function dropIn(cell, ms, hit = ms * DROP_CONTACT) {
 // its fall: where it starts, how long it takes (its pace on top), how fast it lands (--blur, as a
 // share of a whole column's fall: the stretch and the motion blur) and how hard (--bnc). Returns
 // its time, as a share of the half second.
-const DROP_CONTACT = .58;
+// (2026-11-09: the fall itself is as it was - 290 ms to contact for a whole column - but the landing after
+// it has 350 ms where it had 210: squash, rebound, second landing and a last breath out, each eased into
+// the next. The old one hurried through all of it and read as a twitch.)
+const DROP_MS = 640, DROP_CONTACT = .45;
 const dropPx = () => ROWS * CELL_STEP + 30;
 function setDrop(cell, px, pace = 1) {
   const time = Math.max(.6, Math.sqrt(Math.max(0, px) / dropPx())) * pace, blur = Math.min(1, px / dropPx() / time);
@@ -5054,6 +5071,7 @@ const FALLBACK_STRIP = ["L1", "H4", "L3", "H1", "L4", "H3", "L1", "H5", "L3", "H
 function boardZoom(on, heldEls = [], ms = 1800) {
   const bd = $("board");
   if (!bd || REDUCED_MOTION) return;
+  Knock.rumble(on);   // and it trembles through the wait, more as it goes on
   if (!on) { bd.classList.remove("zoomin"); bd.style.removeProperty("--zx"); return; }
   if (heldEls.length) {   // halfway from the middle toward the centre of the held columns
     const w = bd.offsetWidth || 1;
@@ -5064,15 +5082,16 @@ function boardZoom(on, heldEls = [], ms = 1800) {
   bd.classList.add("zoomin");
 }
 function bounceFx() {
-  // background bounce + board pop + character hop, on every reveal (base and each free spin)
+  // A spin sets off: the board gathers itself and lets go (Knock.spin - a dip and a spring back out, the
+  // wall breathing in behind it a beat later) and the tag on the wall hops. Doc does NOT hop or shake
+  // (owner, 2026-11-09: "don't make the character shake when we press spin"): he stands on the pavement
+  // and only his own clips move him.
   if (REDUCED_MOTION) return;
-  const bgw = $("bgwall"), bd = $("board");
-  const chars = [...document.querySelectorAll(".charfx")];
-  bgw.classList.remove("bounce"); bd.classList.remove("pop");
-  for (const c of chars) c.classList.remove("bounce");
-  restyle(bgw, bd, ...chars);   // apply the removals so they all restart rather than run on
-  bgw.classList.add("bounce"); bd.classList.add("pop");
-  for (const c of chars) c.classList.add("bounce");
+  const bd = $("board");
+  bd.classList.remove("pop");
+  restyle(bd);   // apply the removal so its flash restarts rather than runs on
+  bd.classList.add("pop");
+  Knock.spin();
   tagFx("bounce");   // the tag on the wall hops with it
 }
 // The tag on the wall takes a knock of its own: "bounce" (a hop, with the wall, on a spin) or
@@ -5092,22 +5111,100 @@ function tagPop(size = 1) {   // 1 = a cluster's pop (7%); the big-win popup ask
   tagFx("pop");
 }
 
-// One nudge of the whole board per landed reel, a touch harder for each reel that lands
-// after the last, plus a soft thunk. Restarted per reel so every landing reads as its own hit.
-function boardThud(r) {
-  // Played on the board directly, the push worked out here: a custom property set on #board
-  // made all of its 300-500 elements restyle, on every reel's landing.
-  // One at a time: the next reel's landing takes the push over (two on the board at once could not
-  // run on the compositor - every landing's nudge was drawn on the main thread mid-reveal - and the
-  // newer one won anyway).
-  const k = 0.7 + r * 0.12, ease = "cubic-bezier(.2,.8,.3,1)", bd = $("board");
-  if (!REDUCED_MOTION && bd._thud) bd._thud.cancel();
-  if (!REDUCED_MOTION) bd._thud = bd.animate([
-    { transform: "none", easing: ease },
-    { offset: .35, transform: `translateY(${(2.4 * k).toFixed(2)}px) rotate(${(.12 * k).toFixed(3)}deg)`, easing: ease },
-    { offset: .7, transform: `translateY(${(-.8 * k).toFixed(2)}px)`, easing: ease },
-    { transform: "none" },
-  ], { duration: 240 });
+// The board and the wall take their knocks as weights on springs (owner, 2026-11-09: the landings and
+// the shakes "animated better, more aesthetically, smoother" - they were short keyframed nudges, each
+// restarted by the next reel). Every knock - a spin setting off, a column landing, a refill dropping in,
+// a bonus symbol arriving, the tremble under a held reel - is an impulse given to a damped spring: the
+// body carries on from where it is and at the speed it is going, so five columns landing a beat apart
+// read as one board taking five hits, each harder than the last, not five animations cutting each other
+// off. The board dips, rocks a touch toward the column that landed and gives in size; the wall, further
+// off and heavier, follows a beat later, slower and smaller. Doc is on neither: he never shakes.
+// The path ahead is worked out here and played as ONE Web Animation of transforms per body (as the
+// camera's moves are), so the compositor runs it and nothing on the board restyles.
+const Knock = (() => {
+  // per body, per channel: [Hz, damping ratio]. y: px, down +; r: degrees; s: size, about 1
+  const BODY = {
+    board: { id: "board", y: [4.6, .42], r: [3.8, .45], s: [3.6, .45] },
+    wall:  { id: "bgwall", y: [2.6, .5], s: [2.3, .52], lag: 50 },
+  };
+  const CH = ["y", "r", "s"], S = {};
+  const body = n => S[n] || (S[n] = { t: performance.now(), y: [0, 0], r: [0, 0], s: [0, 0], anim: null });
+  // a spring's place and speed dt seconds on
+  const step = ([x, v], [f, z], dt) => {
+    const w = 2 * Math.PI * f, a = z * w, wd = w * Math.sqrt(1 - z * z), e = Math.exp(-a * dt);
+    const c = Math.cos(wd * dt), s = Math.sin(wd * dt), B = (v + a * x) / wd;
+    return [e * (x * c + B * s), e * ((B * wd - a * x) * c - (a * B + x * wd) * s)];
+  };
+  // the speed that carries a spring at rest out to `peak`
+  const speed = (peak, [f, z]) => { const q = Math.sqrt(1 - z * z); return peak * 2 * Math.PI * f * Math.exp(z * Math.atan2(q, z) / q); };
+  function kick(name, k) {
+    const B = BODY[name], el = $(B.id);
+    if (!el || REDUCED_MOTION) return;
+    const b = body(name), now = performance.now(), dt = Math.min(5, (now - b.t) / 1000);
+    let life = 0;
+    for (const c of CH) if (B[c]) {
+      b[c] = step(b[c], B[c], dt);
+      if (k[c]) b[c][1] += speed(k[c], B[c]);
+      life = Math.max(life, 4.6 / (B[c][1] * 2 * Math.PI * B[c][0]));   // until it is down to a hundredth
+    }
+    b.t = now;
+    const n = Math.min(96, Math.ceil(life * 60)), frames = [];
+    for (let i = 0; i <= n; i++) {
+      const at = c => (B[c] && i < n ? step(b[c], B[c], i / 60)[0] : 0);   // (the last frame is rest itself)
+      const y = at("y"), r = at("r"), s = at("s");
+      frames.push(name === "board"
+        ? { transform: `translateY(${y.toFixed(2)}px) rotate(${r.toFixed(3)}deg) scale(${(1 + s).toFixed(4)})` }
+        : { translate: `0 ${y.toFixed(2)}px`, scale: (1 + s).toFixed(4) });   // (the wall's transform carries the scene's lean)
+    }
+    if (b.anim) b.anim.cancel();
+    b.anim = el.animate(frames, { duration: n / 60 * 1000, easing: "linear" });
+  }
+  // (a knock's px are a 1080p screen's: a phone's smaller board takes a smaller one)
+  const both = (bk, wk) => {
+    const u = Math.max(.5, Math.min(1.4, innerHeight / 1080));
+    if (bk.y) bk.y *= u;
+    if (wk && wk.y) wk.y *= u;
+    kick("board", bk);
+    if (wk) setTimeout(() => kick("wall", wk), BODY.wall.lag);
+  };
+  let spunAt = -1e9, rumbleT = 0;
+  return {
+    // a spin sets off: the board gathers (dips, a hair smaller) and springs back out past its size
+    // (once per spin: the press and the reveal both ask)
+    spin() {
+      const now = performance.now();
+      if (now - spunAt < 600) return;
+      spunAt = now;
+      both({ y: 2.4, s: -.013 }, { y: 1.8, s: .0045 });
+    },
+    // column r has landed (weight 1: a plain column; more for a held reel or one carrying a bonus symbol)
+    land(r, weight = 1) {
+      const side = REELS > 1 ? (r / (REELS - 1) - .5) * 2 : 0, k = (.7 + .16 * r) * weight * (state.skip ? .55 : 1);
+      both({ y: 5 * k, r: .32 * side * k, s: -.005 * k }, { y: 1.9 * k, s: .0024 * k });
+    },
+    // a refill has dropped in on a tumble: lighter, by the share of the board that fell
+    refill(share) { const k = .45 + .9 * Math.min(1, share); both({ y: 2.6 * k, s: -.003 * k }, { y: 1.4 * k }); },
+    // a bonus symbol is down: the board swells for it
+    punch(k = 1) { both({ s: .013 * k, y: -1 * k }, { s: .005 * k }); },
+    // the tremble under a held reel: small knocks that grow through the wait, until it lets go (off)
+    rumble(on) {
+      clearInterval(rumbleT); rumbleT = 0;
+      if (!on || REDUCED_MOTION) return;
+      const t0 = performance.now();
+      let i = 0;
+      rumbleT = setInterval(() => {
+        const age = performance.now() - t0, a = .3 + .7 * Math.min(1, age / 1500);
+        if (age > 6000 || state.skip) { clearInterval(rumbleT); rumbleT = 0; return; }
+        i++;   // (a fixed pattern, not chance: a replay trembles the same way)
+        kick("board", { r: .07 * a * Math.sin(i * 2.4), y: .9 * a * Math.cos(i * 1.7) });
+      }, 85);
+    },
+  };
+})();
+// A column has landed: the board takes it (Knock.land - harder for each column after the last, and for
+// a heavy one), plus a soft thunk.
+function boardThud(r, weight = 1) {
+  Knock.land(r, weight);
   if (!state.skip) sfx("bet", 0.5 + r * 0.04);
 }
 
@@ -5367,9 +5464,9 @@ function dropReel(r, ev, wait, inExtra = 0, onCrewLeader = null, slow = 1) {
         c.style.setProperty("--blur", ".15"); c.style.setProperty("--bnc", ".6");
         if (was) restyle(c);   // only a tile still mid-animation needs its removal applied first
         c.classList.add("tdrop");
-        dropIn(c, 500 * .4 * t);
+        dropIn(c, DROP_MS * .4 * t);
       }
-      setTimeout(finish, 240 * t + 40);
+      setTimeout(finish, DROP_MS * .4 * t + 40);
     };
     const skipWatch = setInterval(() => { if (state.skip) quickDrop(); }, 60);
     if (REDUCED_MOTION) { finish(); return; }
@@ -5384,6 +5481,7 @@ function dropReel(r, ev, wait, inExtra = 0, onCrewLeader = null, slow = 1) {
       const crew = c.classList.contains("scat");
       if (crew || c.classList.contains("escat")) {
         c.classList.add("scatland");
+        Knock.punch(crew ? 1 : 1.25);   // the board swells for it
         sfxGap("scatterLand", 140, 1 + r * .02);
         later(800 * tt, () => c.classList.remove("scatland"));
         // only the Crew Leader counts towards the gold. The hold is set by two of those and
@@ -5397,7 +5495,7 @@ function dropReel(r, ev, wait, inExtra = 0, onCrewLeader = null, slow = 1) {
       const c = cells[y];
       place(y);
       c.style.visibility = "";
-      const time = setDrop(c, dropPx(), pace), ms = 500 * tt * time, hit = ms * DROP_CONTACT;
+      const time = setDrop(c, dropPx(), pace), ms = DROP_MS * tt * time, hit = ms * DROP_CONTACT;
       c.classList.add("tdrop");
       dropIn(c, ms, hit);
       later(hit, () => land(y, pace, tt));
@@ -5428,13 +5526,17 @@ function dropReel(r, ev, wait, inExtra = 0, onCrewLeader = null, slow = 1) {
       } else for (let y = 0; y < ROWS; y++) startAt[y] = outAt[y];
       let lastHit = 0, settled = 0;
       for (let y = ROWS - 1; y >= 0; y--) {
-        const ms = 500 * tt * paces[y];   // a whole column's fall: setDrop's time is its pace
+        const ms = DROP_MS * tt * paces[y];   // a whole column's fall: setDrop's time is its pace
         later(startAt[y], () => fallIn(y, paces[y], tt));
         lastHit = Math.max(lastHit, startAt[y] + ms * DROP_CONTACT);
         settled = Math.max(settled, startAt[y] + ms);
       }
       // the column thuds as its last tile lands, and hands over once the slowest has settled
-      later(lastHit + 30 * tt, () => { boardThud(r); sfxGap("reelStop", 40, .97 + r * .012); });
+      later(lastHit + 30 * tt, () => {
+        const bonus = cells.some(c => c.classList.contains("scat") || c.classList.contains("escat"));
+        boardThud(r, (held ? 1.5 : 1) * (bonus ? 1.2 : 1));   // a held reel comes down hard; a bonus symbol has weight
+        sfxGap("reelStop", 40, .97 + r * .012);
+      });
       later(settled + 20 * tt, finish);
     });
     later(wait + 8000, finish);   // a hidden tab must never hang the round
@@ -5449,7 +5551,9 @@ async function renderReveal(ev) {
 
   // reels go left to right; a reel held back for a near miss means a bonus symbol is down
   // and one or two more would pay it off: it waits, and the characters lean in
-  const t = tempo(), stagger = 80 * t, anticExtra = 800 * t, revealStart = performance.now();
+  // the columns land left to right, each gap a little longer than the last (80, 90, 100, 110 ms): the
+  // reveal slows into its last column instead of ticking over evenly; a held reel waits a touch longer too
+  const t = tempo(), waitOf = r => (80 * r + 5 * r * (r - 1)) * t, anticExtra = 900 * t, revealStart = performance.now();
   if (ev.anticipation && ev.anticipation.some(a => a > 0)) {
     state.anticipated = true;
     charReact("anticipation");
@@ -5469,7 +5573,7 @@ async function renderReveal(ev) {
   // gravity, then straight back in; a held reel (slow > 1) empties first, and its tiles come in one
   // after another on its slower clock (dropReel)
   const spanOf = s => ((ROWS - 1) * OUT_GAP + OUT_MS * 1.1) * t
-    + (s > 1 ? IN_GAP * t * s * ((ROWS - 1) + .09 * (ROWS - 1) * (ROWS - 2) / 2) + 550 * t * s : 550 * t);
+    + (s > 1 ? IN_GAP * t * s * ((ROWS - 1) + .09 * (ROWS - 1) * (ROWS - 2) / 2) + (DROP_MS + 50) * t * s : (DROP_MS + 50) * t);
   let crewDown = 0;
   const onCrewLeader = () => {
     if (++crewDown !== 2) return;
@@ -5481,10 +5585,10 @@ async function renderReveal(ev) {
   // out, any near-miss beat, and its seven icons falling in. It rises and eases on the old
   // spin curve, and a skip cuts it the moment the board is in.
   const maxExtra = Math.max(0, ...(ev.anticipation || [0]).map(a => (a || 0) * anticExtra));
-  const revealMs = (REELS - 1) * stagger + maxExtra + spanOf(maxSlow);
+  const revealMs = waitOf(REELS - 1) + maxExtra + spanOf(maxSlow);
   const hushReels = (!state.skip && !REDUCED_MOTION) ? reelSfx(revealMs) : () => {};
   await Promise.all(reelEls.map((_, r) =>
-    dropReel(r, ev, r * stagger, (ev.anticipation?.[r] || 0) * anticExtra, onCrewLeader, slowOf(r))));
+    dropReel(r, ev, waitOf(r), (ev.anticipation?.[r] || 0) * anticExtra, onCrewLeader, slowOf(r))));
   hushReels();   // a skipped reveal cuts it short; a full one has already faded out
   boardZoom(false);   // the lean-in lets go as the board settles, hit or miss
   await spraysDone();   // every Multi's value is on its brick before anything is paid off it
@@ -6498,7 +6602,7 @@ const handlers = {
           if (cell.classList.contains("tdrop")) { cell.classList.remove("tdrop"); restyle(cell); }   // restart it from the top
           const time = setDrop(cell, fall * CELL_STEP, pace);   // the rows it really fell, under the reveal's gravity
           cell.classList.add("tdrop");
-          dropIn(cell, 500 * tempo() * time);
+          dropIn(cell, DROP_MS * tempo() * time);
           landers.push({ row: fy, pace, time, sym: finalSyms[fy] });
         }
       }
@@ -6513,12 +6617,15 @@ const handlers = {
       let next = 0;
       if (!state.skip) sfx("cascade", .96 + Math.random() * .08);   // the refill tumbling in
       for (const l of landers) {
-        const at = Math.max(500 * DROP_CONTACT * t * l.time, next);
+        const at = Math.max(DROP_MS * DROP_CONTACT * t * l.time, next);
         next = at + gap;
         setTimeout(() => { sfx("dripLand", landRate(l.row, l.pace)); landFoley(l.sym); }, at);
       }
+      // and the board takes the refill: one knock as the bulk of it lands, by how much fell
+      const mid = landers[landers.length >> 1].time;
+      setTimeout(() => Knock.refill(landers.length / (REELS * ROWS) * 2.2), DROP_MS * DROP_CONTACT * t * mid + 20);
     }
-    await delay(500 * slowest);   // until the slowest tile has settled
+    await delay(DROP_MS * slowest);   // until the slowest tile has settled
     eachCell((el, r, y) => {
       el.classList.remove("tdrop", "explode");
       for (const v of ["--fall", "--droptime", "--blur", "--bnc"]) el.style.removeProperty(v);

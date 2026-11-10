@@ -51,6 +51,16 @@ with the art venv `ClaudeRoblox/smukiez-slot/.venv`.
 5. **Blender** (5.2.3; builds run live through the MCP or in the background):
    - `blender/symanim.py <ID>` builds each symbol's scene: idle, land, hit and multi clips on a bone-bent mesh plus
      effect sprites from `make_fx_sprites.py`. `blender/render_all.sh` renders all 20, 5 at a time (about 5 minutes).
+   - **FS and XFS are rigs of separate pieces** (2026-11-09), not one bent sticker - do NOT build BS / ES with
+     `symanim.py` (render_all.sh would flatten them again). `scatter_regen.py gen` has the image model draw every
+     piece on its own (FS: F, S, crystal ball, smoke, beads; XFS: X, F, S, the skull, his hands, the fire), `fit`
+     takes each piece's own cream border off, lays it on the first sticker (kept as `icons/<ID>_v1.png`) and cuts
+     the border it throws as a separate `_rim` layer, `finish` writes the new still icon, halo and
+     `assets/flat/<ID>.webp`. `blender/symparts.py <BS|ES> [build,render,preview] [clips]` gives each piece its own
+     chain of bones (all the rims sit behind all the pieces, so the border follows them as one outline) and renders
+     the same four clips to the same place: the letters hop in turn, the ball bobs and jumps off its letter, the
+     beads swing, the smoke and fire waver, the skull ducks and peeks. In the game these two never rest
+     (`SYM_ALWAYS`): their idle loops at full speed and every other clip hands straight back to it.
    - `blender/doc_rig.py` is Doc's live rig: a mesh per part, 49 deforming bones - a four-bend trunk (hips that tilt,
      two spine bones, a chest that breathes), a clavicle a shoulder, a `face` bone that slides his features inside
      the skull (a head turn and a nod), two-jointed fingers, IK legs with feet that pivot on ball or heel without
