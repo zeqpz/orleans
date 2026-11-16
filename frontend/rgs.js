@@ -254,7 +254,8 @@ const RGS = (() => {
         if ((s.split(".")[1] || "").length < meta.decimals) s = v.toFixed(meta.decimals);
       }
       s = group(s);
-      return meta.after ? `${s} ${meta.symbol}` : `${meta.symbol}${s}`;
+      // (a replay link in social mode that names no currency shows bare figures: no symbol, no stray space)
+      return (meta.after ? `${s} ${meta.symbol}` : `${meta.symbol}${s}`).trim();
     },
 
     /** Bet must sit within min/max and land on a step boundary. */
