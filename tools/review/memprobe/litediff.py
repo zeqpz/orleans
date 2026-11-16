@@ -20,13 +20,23 @@ CASES = [
     ("frame.webp", "fill", [(1140, 1125), (902, 885), (1281, 1268), (1097, 1081)]),
     ("board_back.webp", "fill", [(1140, 1125), (902, 885), (1281, 1268)]),
     ("title_logo.webp", "contain", [(1076, 574), (417, 222), (1214, 647), (957, 510)]),
-    # (tried and dropped from the phone copies - kept here to show why: drawn 3-5x down, a copy is visibly softer)
+    # (review 3: copies at about twice the biggest a phone draws them; the first round's copies of these, at 1.1x, were
+    # dropped as softer)
     ("bonus/banner_fs.webp", "cover", [(279, 258), (445, 247), (317, 294), (506, 281)]),
     ("bonus/banner_xfs.webp", "cover", [(279, 258), (506, 281)]),
     ("bonus/banner_boost.webp", "cover", [(279, 258), (506, 281)]),
     ("feature_box.webp", "fill", [(479, 607), (494, 626), (571, 723)]),
     ("flat/BS.webp", "contain", [(201, 201), (240, 240), (179, 179)]),
     ("flat/ES.webp", "contain", [(201, 201), (240, 240)]),
+    # review 3 (tools/nola/make_mobile_art.py JOBS3; the boxes from picfit.py / picmax at rest, device px)
+    ("bonus_btn_bg.webp", "contain", [(225, 115), (201, 102)]),
+    ("bonus_btn_text.webp", "contain", [(197, 102), (660, 439)]),
+    ("xbonus_text.webp", "contain", [(660, 556)]),
+    ("tier_bg.webp", "fill", [(1158, 327), (921, 260)]),
+    ("total_bg.webp", "fill", [(1270, 580), (1000, 460)]),
+    ("big_win.webp", "contain", [(1030, 212)]), ("mega_win.webp", "contain", [(1030, 214)]),
+    ("xtreme_win.webp", "contain", [(1030, 230)]), ("total_win.webp", "contain", [(1199, 338)]),
+    ("vnum/border.webp", "fill", [(235, 201), (160, 140)]),
 ]
 DPR = 3
 b = Browser(1400, 900, DPR, ua=None, mobile=False)

@@ -79,7 +79,8 @@ CENSUS = """JSON.stringify((() => {
     if (/matrix3d|perspective/.test(cs.transform) || /transform|opacity/.test(cs.willChange) || cs.transformStyle === 'preserve-3d'
         || (cs.backdropFilter && cs.backdropFilter !== 'none')) want(el);
   }
-  const pf = document.getElementById('paintframe'); if (pf && pf.getClientRects().length) want(pf);
+  const pf = document.getElementById('paintframe'); if (pf && pf.getClientRects().length && getComputedStyle(pf).visibility !== 'hidden') want(pf);
+  for (const fb of document.querySelectorAll('.fbar')) if (fb.getClientRects().length) want(fb);   // (review 3: a phone's frame is its four bars)
   let wkl = 0, wkn = 0; const top = [];
   for (const el of lay.keys()) {
     if (getComputedStyle(el).display === 'none' || !el.getClientRects().length) continue;
@@ -109,6 +110,8 @@ nsamp = [0]
 
 
 def sample(tag=""):
+    if nsamp[0] % 4 == 0:
+        b.gc()   # (review 3) garbage out of the WeakRef counts: a decoded stereo effect let go for its mono copy, a dropped canvas
     c = json.loads(b.js(CENSUS))
     if nsamp[0] % 4 == 0:
         tot, vis, rows = pics_bytes(json.loads(b.js("JSON.stringify(__mem.pics())")))

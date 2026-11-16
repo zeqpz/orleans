@@ -101,10 +101,11 @@ const RULES = (() => {
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const x = v => "x" + (Number.isInteger(v) ? v : String(v));
+  const art = u => (window.mobArt ? window.mobArt(u) : u);   // (a phone takes the phone copy where there is one: index.html)
 
   function tile(sym, social) {
     if (sym === "M") return `<div class="ptile multi"><span>x5</span><small>MULTI</small></div>`;
-    return `<img class="ptile" src="assets/flat/${sym}.webp" alt="${esc(T(NAMES[sym], social))}" draggable="false">`;
+    return `<img class="ptile" src="${art(`assets/flat/${sym}.webp`)}" alt="${esc(T(NAMES[sym], social))}" draggable="false">`;
   }
 
   /**
@@ -166,9 +167,9 @@ const RULES = (() => {
     <div class="ptext">${t("Hex Line: a straight line of 3 or 4 Multis can land together, along a row or down a column; their blasts overlap, so the cells between them collect more than one value. It can land on any spin, and far more often in a bonus. Voodoo Storm: very rarely, in the base game, every cell of the board except a FS scatter or XFS scatter becomes a Multi at once; they all blow out together and the whole board drops in on top of their values.")}</div></div>
   <div class="prow"><div class="ptile multi"><span>x1.25</span><small>DROP</small></div><div class="pname">${t("Line Drops")}</div>
     <div class="ptext">${t("Every winning cluster, once {paid|counted}, leaves a small multiplier (x1.25, x1.5 or x2) on one of its own cells for every five symbols it held, chosen at random. A line drop adds to whatever value that cell already holds and lasts exactly as a Multi's value does: for the rest of the spin in the base game, for the whole feature in a bonus. It never changes the win of the cluster that left it.")}</div></div>
-  <div class="prow"><img class="ptile" src="assets/flat/BS.webp" alt="FS scatter" draggable="false"><div class="pname">${t("FS scatter — Bonus Scatter")}<small>BS</small></div>
+  <div class="prow"><img class="ptile" src="${art("assets/flat/BS.webp")}" alt="FS scatter" draggable="false"><div class="pname">${t("FS scatter — Bonus Scatter")}<small>BS</small></div>
     <div class="ptext">${t("Appears anywhere. 3, 4 or 5 FS scatters on one spin award 10, 12 or 15 free spins (the Standard Bonus). FS scatter does not form clusters and has no value of its own.")}</div></div>
-  <div class="prow"><img class="ptile" src="assets/flat/ES.webp" alt="The XFS scatter" draggable="false"><div class="pname">${t("The XFS scatter — Extreme Scatter")}<small>ES</small></div>
+  <div class="prow"><img class="ptile" src="${art("assets/flat/ES.webp")}" alt="The XFS scatter" draggable="false"><div class="pname">${t("The XFS scatter — Extreme Scatter")}<small>ES</small></div>
     <div class="ptext">${t("2 XFS scatters anywhere on one spin award 17 free spins in the Extreme Bonus directly. 1 XFS scatter on the same spin as a FS scatter trigger upgrades that trigger to the Extreme Bonus, keeping its spin count. The XFS scatter does not form clusters and has no value of its own.")}</div></div>
 </section>
 

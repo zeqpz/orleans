@@ -124,10 +124,19 @@
         } catch (err) { postMessage({ id: q.id, err: String((err && err.message) || err) }); }
       };`;
       const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" })), wait = new Map();
-      const onmessage = e => { const p = wait.get(e.data.id); if (!p) return; wait.delete(e.data.id); e.data.err ? p.no(new Error(e.data.err)) : p.ok(e.data.bmp); };
-      const ws = Array.from({ length: POOL }, () => { const w = new Worker(url); w.onmessage = onmessage; return w; });
+      // (mobile, review 3) the workers are let go a moment after their last sheet and made again for the next: in WebKit
+      // each one's heap kept every sheet it had fetched until a GC that seldom came (Playwright WebKit, iPhone 12: the
+      // page's process ~90 MB lighter through a round with the clips coming and going without them)
+      const SHED = RELEASE ? 1500 : 0;
+      let ws = null, idle = 0;
+      const onmessage = e => {
+        const p = wait.get(e.data.id); if (!p) return; wait.delete(e.data.id); e.data.err ? p.no(new Error(e.data.err)) : p.ok(e.data.bmp);
+        if (SHED && !wait.size) { clearTimeout(idle); idle = setTimeout(() => { if (!wait.size && ws) { ws.forEach(w => w.terminate()); ws = null; } }, SHED); }
+      };
+      const pool = () => ws || (ws = Array.from({ length: POOL }, () => { const w = new Worker(url); w.onmessage = onmessage; return w; }));
+      if (!SHED) pool();
       let n = 0;
-      return q => new Promise((ok, no) => { q.id = ++n; wait.set(q.id, { ok, no }); ws[n % ws.length].postMessage(q); });
+      return q => new Promise((ok, no) => { clearTimeout(idle); const p = pool(); q.id = ++n; wait.set(q.id, { ok, no }); p[n % p.length].postMessage(q); });
     } catch (e) { return null; }
   })();
   let busy = 0;
@@ -163,8 +172,29 @@
       }
       const frames = [];
       for (let f = 0; f < n; f++) frames.push(new PIXI.Texture({ source: base.source, frame: new PIXI.Rectangle((f % cols) * fw, Math.floor(f / cols) * fh, fw, fh) }));
-      return { frames, fw, fh, k };
+      return { frames, fw, fh, k, base };
     } finally { free(); }
+  }
+
+  // (mobile, 2026-11-16 review 3) let an atlas go: its texture leaves the GPU now, not at Pixi's next GC. The mobile tier
+  // keeps only the landings for good and brings the other clips in for the moments that play them (index.html, symDrop)
+  function drop(a) {
+    if (!a || !a.frames || !a.frames.length) return;
+    const src = a.frames[0].source;
+    const i = released.findIndex(r => r.source === src);
+    if (i >= 0) released.splice(i, 1);
+    for (const col of C) for (const c of col || []) if (c && c.spr.texture && c.spr.texture.source === src) { c.spr.texture = PIXI.Texture.EMPTY; c.spr.visible = false; c.tex = null; }
+    for (const f of a.frames) f.destroy(false);
+    a.frames.length = 0;
+    // and the board's draw list is built afresh before the next frame: Pixi keeps each batch's textures from the frame
+    // that built it, and a sprite that moves to another texture already in its batch keeps that batch - so a batch
+    // could still bind the source let go here (Pixi 8.20: "reading 'addressModeU'" on every frame after)
+    const rg = app && (app.stage.renderGroup || app.stage.parentRenderGroup);
+    if (rg) rg.structureDidChange = true;
+    // the whole texture (Pixi's cache keeps it by its bitmap until it is destroyed) and its source, off the GPU
+    try { if (a.base) a.base.destroy(true); else src.destroy(); } catch (e) { /* already gone with its context */ }
+    a.base = null;
+    dirty = true;
   }
 
   // the context came back empty: every released atlas is cut from its sheet again (the same fetch and resize, so the
@@ -609,8 +639,11 @@
         else if (c.act > 0) { sample(c, tnow); dirty = true; }
         // the symbol: the frame its rig is showing (symDraw), on the clip's box inside the rig
         const ico = cell.ico, rig = ico && ico.firstElementChild;
-        const g = rig && rig._gclip ? SYMF.sheets.get(rig._name + "_" + rig._gclip) : null;
-        const tex = g && g.atlas ? g.atlas.frames[rig._gf] : null;
+        let gc = rig && rig._gclip;
+        const g = gc ? SYMF.sheets.get(rig._name + "_" + gc) : null;
+        let tex = g && g.atlas ? g.atlas.frames[rig._gf] : null;
+        // a clip that is not on the GPU (the mobile tier lets clips go between rounds): the rest pose, never a gap
+        if (!tex && gc && gc !== "land") { const l = SYMF.sheets.get(rig._name + "_land"); tex = l && l.atlas ? l.atlas.frames[0] : null; gc = "land"; }
         const show = !!tex && !hiddenReel && c.op * c.ico > .003;
         if (tex !== c.tex) { c.tex = tex; dirty = true; }
         if (!show) { if (c.spr.visible || c.sm.visible) { c.spr.visible = false; c.sm.visible = false; dirty = true; } continue; }
@@ -628,7 +661,7 @@
         c.cont.zIndex = c.z * 1000 + c.order;
         if (parent !== root) rr.cont.zIndex = Math.max(rr.cont.zIndex || 0, c.cont.zIndex);
         // the rig: the icon's footprint scaled into the cell's 88% box, centred; the clip's box inside it
-        const m = rig._m, rw = m.icon[0] * 10, rh = m.icon[1] * 10, bx = m.clips[rig._gclip].box;
+        const m = rig._m, rw = m.icon[0] * 10, rh = m.icon[1] * 10, bx = m.clips[gc].box;
         const sR = Math.min(b.cw * .88 / rw, b.ch * .88 / rh);
         c.spr.texture = tex;
         c.spr.x = b.w / 2 + ((bx[0] + m.icon[0] / 2) * 10 - rw / 2) * sR;
@@ -654,5 +687,5 @@
     if (dirty) { dirty = false; app.render(); }
   }
 
-  window.BoardGL = { on: false, init, atlas, touch: () => { dirty = true; }, MAX_RES, get app() { return app; } };
+  window.BoardGL = { on: false, init, atlas, drop, touch: () => { dirty = true; }, MAX_RES, get app() { return app; } };
 })();

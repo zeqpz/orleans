@@ -36,11 +36,22 @@ window.MOBART = (() => {
   return window.PHONE;
 })();
 document.documentElement.classList.toggle("mobart", window.MOBART);
-window.MOBART_ART = /^(.*?)assets\/(frame|board_back|title_logo|feature_box)\.webp$/;
+// (review 3, the same day: the owner allowed the phone tier to change a little) more copies: the HUD's bonus button, the
+// bonus intros' titles, the win screens' lettering and splashes, the panels' frames, the shop's banners and the
+// scatters' flat icons - the small ones at about twice the biggest a phone draws them, so the browser still halves
+// them as it scaled the full files down (tools/nola/make_mobile_art.py JOBS3). Every <img> the script makes takes the
+// copy (the src setter below), the stylesheet's pictures are pointed at it before the body is parsed, and the templates
+// that write <img> tags call mobArt themselves.
+window.MOBART_ART = /^(.*?)assets\/(frame|board_back|title_logo|feature_box|bonus_btn_text|bonus_btn_bg|xbonus_text|tier_bg|total_bg|big_win|mega_win|xtreme_win|total_win|info_panel|bonus_panel|bonus\/banner_(?:fs|xfs|boost)|flat\/(?:BS|ES)|vnum\/border)\.webp$/;
 window.mobArt = u => {
-  const m = window.MOBART && window.MOBART_ART.exec(u);
+  const m = window.MOBART && typeof u === "string" && window.MOBART_ART.exec(u);
   return m ? m[1] + "assets/mobile/lite/" + m[2] + ".webp" : u;
 };
+if (window.MOBART) (() => {
+  const d = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+  if (d && d.set && d.configurable) Object.defineProperty(HTMLImageElement.prototype, "src", {
+    configurable: true, enumerable: d.enumerable, get() { return d.get.call(this); }, set(v) { d.set.call(this, window.mobArt(String(v))); } });
+})();
 // The safety net (all tiers; from Tipsy Harvest's iOS reviews, zeqpz/fallslotsga 9694dd3): it does nothing until
 // something fails. WebKit hands back no 2D context (null) when it is out of canvas memory, and a WebGL context can be
 // lost; either sets GFX.low, every 2D context the effects ask for goes through gfxCtx() and an effect whose canvas is
@@ -3449,15 +3460,55 @@ addEventListener("webglcontextlost", () => gfxLow("a WebGL context was lost"), t
   html.mob .infowrap { background: rgba(8, 6, 10, .82); }
   html.mob .rpwrap { background: rgba(6, 8, 18, .6); }
   html.mob .rpwrap.done { background: rgba(6, 8, 18, .35); }
+  /* ---- the MOBILE tier, review 3 (iOS memory, 2026-11-16): no screen-sized layer that only exists for a fade or a
+     tilt. WebKit backs every composited layer at its size x DPR^2 - a screen-sized one is ~12 MB on an iPhone - so the
+     screens that faded over one another (the loading screen into the features screen, the features screen into the
+     game) cut instead, their pieces still making their own entrances (the title's pop, the plates dealt out); the
+     bonus intro still fades to black and back, but its wall and column come up at once under their own slams and pops;
+     the win popup's backdrop is there at once (the figure still swells in) and its flash's layer is only the box its
+     light reaches (the same light). The plates, CLICK TO PLAY and the bonus intro's pieces lose the 3D the mouse tilts them
+     with (a finger never does), and the stage its perspective (the scene's lean is 0 here: it drew nothing, but made
+     the board a layer of its own). A screen's pictures are not painted while another screen covers it (the game
+     under the loading and features screens; the features screen before it is up). */
+  html.mob .stage { transform: none; }
+  html.mob .intro, html.mob .features, html.mob body.features-fade #app { transition: none !important; }
+  html.mob .features:not(.up) { visibility: hidden; }
+  html.mob body.features-up #app, html.mob body:has(> #intro:not(.gone)) #app { visibility: hidden; }
+  html.mob .fbox, html.mob .features .fcont .ftxt { transform: none; }
+  html.mob .bonusintro .wall, html.mob .bonusintro .inner { transition: none !important; }
+  html.mob .bonusintro .inner { transform: none; }
+  html.mob .bonusintro .blogo, html.mob .bonusintro .byou, html.mob .bonusintro .bnum, html.mob .bonusintro .bfs, html.mob .bonusintro .bhow { transform: none; }
+  html.mob .bonusintro .brays { width: 125%; }
+  html.mob .totalwin { transition: none; }
+  html.mob .totalwin .twflash {   /* the same ellipse, which is clear from 70% of its radii out */
+    inset: auto; left: var(--cx, 50%); top: var(--cy, 50%); width: min(84vmax, 100vw); height: min(58.8vmax, 100vh); translate: -50% -50%;
+    background: radial-gradient(ellipse 60vmax 42vmax at 50% 50%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 70%);
+  }
 </style>
 <style>
   /* the phone copy of the title is drawn in the full picture's proportions (its own are a hair off: 1340x714) */
   html.mobart .features .ftitle { aspect-ratio: 2400 / 1279; }
+  /* (review 3) the backing's phone copy is cut to its opaque box, and the frame is its four bars: each laid where it
+     sits in the frame's box (#paintframe, #paintback: W = (100% - 36px) / .8273 wide, H = (100% - 36px) / .6816 tall,
+     at 18px - (100% - 36px) * .10330, 18px - (100% - 36px) * .22724) - the fractions tools/nola/make_mobile_art.py prints */
+  html.mobart #paintback {
+    width: calc((100% - 36px) / .8273 * .83571); height: calc((100% - 36px) / .6816 * .76764);
+    left: calc(18px - (100% - 36px) * .10330 + (100% - 36px) / .8273 * .08143);
+    top: calc(18px - (100% - 36px) * .22724 + (100% - 36px) / .6816 * .13323);
+  }
+  html.mobart #paintframe { visibility: hidden; }
+  html.mobart .fbar { position: absolute; z-index: 3; pointer-events: none; user-select: none; display: block; }
+  html.mobart .fbar.fb-top, html.mobart .fbar.fb-bottom { left: calc(18px - (100% - 36px) * .10330); width: calc((100% - 36px) / .8273); }
+  html.mobart .fbar.fb-top { top: calc(18px - (100% - 36px) * .22724); height: calc((100% - 36px) / .6816 * .16574); }
+  html.mobart .fbar.fb-bottom { top: calc(18px - (100% - 36px) * .22724 + (100% - 36px) / .6816 * .82316); height: calc((100% - 36px) / .6816 * .17684); }
+  html.mobart .fbar.fb-left, html.mobart .fbar.fb-right { top: calc(18px - (100% - 36px) * .22724 + (100% - 36px) / .6816 * .16574); height: calc((100% - 36px) / .6816 * .65741); }
+  html.mobart .fbar.fb-left { left: calc(18px - (100% - 36px) * .10330); width: calc((100% - 36px) / .8273 * .11286); }
+  html.mobart .fbar.fb-right { left: calc(18px - (100% - 36px) * .10330 + (100% - 36px) / .8273 * .87214); width: calc((100% - 36px) / .8273 * .12786); }
 </style>
 <script>
 // (phone art) the stylesheet's pictures with a phone copy point at it before anything has asked for them
 if (window.MOBART) (() => {
-  const re = /assets\/(feature_box)\.webp/g;
+  const re = /assets\/(feature_box|bonus_btn_text|bonus_btn_bg|xbonus_text|tier_bg|total_bg|big_win|mega_win|xtreme_win|total_win|info_panel|bonus_panel|bonus\/banner_(?:fs|xfs|boost)|flat\/(?:BS|ES)|vnum\/border)\.webp/g;
   const walk = rules => {
     for (const r of rules) {
       const st = r.style;
@@ -3481,7 +3532,22 @@ if (window.MOBART) (() => {
 <div class="main">
   <div class="stage">
     <div class="board" id="board"><div class="boardplate" aria-hidden="true"></div><img id="paintback" alt="" draggable="false" aria-hidden="true"><img id="paintframe" alt="" draggable="false"></div>
-    <script>document.getElementById("paintback").src = mobArt("assets/board_back.webp"); document.getElementById("paintframe").src = mobArt("assets/frame.webp");</script>
+    <script>
+    document.getElementById("paintback").src = mobArt("assets/board_back.webp");
+    // (phone art, review 3) the frame as its four bars: its middle is half the picture and clear, and was decoded all the
+    // same; #paintframe stays as the frame's box (boardgl.js reads the rail off it), drawing nothing
+    if (window.MOBART) {
+      const f = document.getElementById("paintframe"), d = document.createElement("div");
+      d.id = "paintframe"; d.setAttribute("aria-hidden", "true"); f.replaceWith(d);
+      for (const k of ["top", "bottom", "left", "right"]) {
+        const i = document.createElement("img");
+        i.className = "fbar fb-" + k;   // (not .top/.bottom: .bottom is the HUD bar)
+        i.alt = ""; i.draggable = false; i.setAttribute("aria-hidden", "true");
+        i.src = "assets/mobile/lite/frame_" + k + ".webp";
+        d.before(i);
+      }
+    } else document.getElementById("paintframe").src = mobArt("assets/frame.webp");
+    </script>
     <div class="ticker" id="ticker">Draws come from the optimized 96.7% RTP lookup tables — the real math.</div>
     <div class="banner" id="banner"><div class="big" id="bannerBig"></div><div class="sub2" id="bannerSub"></div><img id="bannerMural" class="muralimg" alt=""></div>
     <div class="tally" id="tally">0.00</div>
@@ -4035,6 +4101,15 @@ const SYM_IDLE_REST = [8000, 20000];   // ms an icon rests between its idle cycl
 const SYM_ALWAYS = new Set(["BS", "ES"]);
 const SYM_IDLE_MAX_SHARE = .12;       // at most this share of the board mid-idle at once: a start over it waits a moment
 const SYM_IDLE_RATE = .575;             // the idles play at this share of their frame rate: slow and barely noticed (owner, 2026-11-04); land/hit/multi at their own speed
+// The mobile tier keeps only the landings on the GPU for good (iOS memory, review 3, 2026-11-16: every symbol's four clips
+// were ~108 MB of textures on an iPhone, the biggest thing the page held). A round's book says which symbols win in each
+// spin, so their hit clips are cut as the spin starts (and the Multi clips for the cells a Multi will power, once that
+// board is down) and let go when the next spin starts or the round ends; the idles come in a few at a time (the ones
+// least recently played go) and none starts while a round plays. Same clips, same frames: what changes is when they are
+// on the GPU. ?symdemand=0 holds every clip as before (QA).
+const SYM_DEMAND = !!window.MOBILE && !/[?&]symdemand=0\b/.test(location.search);
+const SYM_IDLE_KEEP = 4;              // (SYM_DEMAND) idle clips held at once, besides the bonus symbols' loops on the board
+const SYM_IDLE_TURN = 9000;           // (SYM_DEMAND) ms an idle clip is held unplayed before another symbol's may take its place
 const SYMF = { man: null, density: "d16", sheets: new Map(), k: 1 };   // sheets: "<ID>_<clip>" -> { img, ok, ready, frames }
 // The clips every symbol plays all the time - its landing and its idle - are held as ready frames (perf,
 // 2026-11-03). Drawn straight from the sheets, the board needed every sheet decoded at once (~480 MB at
@@ -4057,7 +4132,7 @@ const symRestGate = new Promise(r => { symRestGo = r; });
 setTimeout(() => symRestGo(), 25000);
 // sheet px per rig unit the biggest symbol needs at rest on this screen, times the headroom -> the density to load
 const symDpr = () => Math.min(window.devicePixelRatio || 1, window.BoardGL && BoardGL.on ? BoardGL.MAX_RES : 99);
-function symWantDensity() {
+function symWantDensity(noPhone) {
   const c = cellEls[0] && cellEls[0][0], dpr = symDpr();
   let px = dpr;
   if (c && c.offsetWidth && c.offsetHeight) {
@@ -4067,6 +4142,12 @@ function symWantDensity() {
   }
   const force = +new URLSearchParams(location.search).get("symd");            // QA: ?symd=3.2 pins a density
   const list = (SYMF.man && SYMF.man.densities) || SYM_DENSITY;
+  // (the mobile tier, review 3) the clips baked at a phone's density (assets/sym/d8, tools/nola/make_phone_sheets.py),
+  // where they are enough: up to ~0.85 px per unit they go on the GPU as they are, with no resize - a phone used to
+  // decode a whole d16 sheet (4x the pixels) and cut it down, for every clip it brought in; on its side it resizes
+  // these. A bigger phone keeps d16.
+  const ph = !noPhone && window.MOBILE && SYMF.man && SYMF.man.phone;
+  if (ph && !list.includes(force) && px <= ph.density / .94) return "d" + Math.round(ph.density * 10);
   const pick = list.includes(force) ? force : (list.find(d => d >= px * SYM_HEADROOM - 1e-6) || list[list.length - 1]);
   return "d" + Math.round(pick * 10);
 }
@@ -4146,10 +4227,12 @@ function loadSymFrames() {
     // still lists the seven lows the 5x5 math dropped (L2, L5-L10), whose four clips each were fetched, decoded and
     // put on the GPU for nothing - ~40 MB of textures on a phone (iOS memory, 2026-11-16)
     const ids = Object.keys(man.symbols).filter(id => SYM[id] || FLAT[id]);
+    if (ids.some(id => !man.symbols[id].sheets[SYMF.density])) { SYMF.density = symWantDensity(true); SYMF.k = symHoldScale(); }   // (a symbol with no phone sheets: all from d16)
     // the landings hold the rest pose and play as every tile drops in: the board waits on them. The wins
     // follow behind the loading screen, then the idles every resting symbol loops, then the multipliers - a
     // clip at a time, every symbol's at once.
     await Promise.all(ids.map(id => symSheet(id, "land")));
+    if (SYM_DEMAND) { SYMF.rest = Promise.resolve(); return ids.length > 0; }   // (the rest come as the rounds ask for them)
     SYMF.rest = (async () => {
       await symRestGate;
       for (const clip of ["hit", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));
@@ -4269,7 +4352,8 @@ function rigPlay(cell, clip, { loop = false, speed = 1 } = {}) {
   if (!el || REDUCED_MOTION) return null;
   clip = CLIP_OF[clip] || clip;
   const c = el._m.clips[clip], s = SYMF.sheets.get(el._name + "_" + clip);
-  if (!c || !s || !s.ok) { if (c && !s) symSheet(el._name, clip).catch(() => {}); return null; }
+  if (!c || !s || !s.ok) { if (c && !s && !(SYM_DEMAND && clip === "idle")) symSheet(el._name, clip).catch(() => {}); return null; }
+  s.used = performance.now();
   Object.assign(el, { _clip: clip, _t0: performance.now(), _rate: clip === "idle" ? speed * SYM_IDLE_RATE : speed, _loop: loop });
   symDraw(el, clip, 0);
   symPlaying.add(el);
@@ -4280,6 +4364,109 @@ function rigStop(el) {
   if (!el) return;
   symPlaying.delete(el);
   if (el._clip) { el._clip = null; symRest(el); }
+}
+// (SYM_DEMAND) Clips in and out by the round. symDrop lets one clip go - off the GPU at once (BoardGL.drop) - unless a
+// symbol is playing it; a rig showing a clip that is gone shows its rest pose (boardgl.js), so nothing ever blinks out.
+function symDrop(key) {
+  const s = SYMF.sheets.get(key);
+  if (!s || !s.ok || key.endsWith("_land")) return false;
+  for (const el of symPlaying) if (el._name + "_" + el._clip === key) return false;
+  SYMF.sheets.delete(key);
+  s.ok = false;
+  if (s.atlas && window.BoardGL) BoardGL.drop(s.atlas);
+  if (s.frames) for (const b of s.frames) if (b && b.close) b.close();
+  if (s.img) s.img.src = "";
+  s.atlas = s.frames = s.img = null;
+  BoardGL.touch && BoardGL.touch();
+  return true;
+}
+function symDropAll(clips, keep) {
+  for (const key of [...SYMF.sheets.keys()]) {
+    const i = key.lastIndexOf("_"), name = key.slice(0, i), clip = key.slice(i + 1);
+    if (clips.includes(clip) && !(keep && keep.has(key))) symDrop(key);
+  }
+}
+// an idle clip wanted for `name`: room is made by letting go the one played longest ago, once it has rested SYM_IDLE_TURN
+// (never one playing) - so the held set turns over slowly, a clip every few seconds at most; false: no room yet
+function symIdleWant(name) {
+  const key = name + "_idle";
+  if (SYMF.sheets.has(key)) return true;
+  if (!SYM_ALWAYS.has(name)) {
+    const held = [...SYMF.sheets.entries()].filter(([k, s]) => k.endsWith("_idle") && !SYM_ALWAYS.has(k.slice(0, -5)));
+    if (held.length >= SYM_IDLE_KEEP) {
+      const now = performance.now(), busy = new Set([...symPlaying].map(el => el._name + "_" + el._clip));
+      const old = held.filter(([k, s]) => s.ok && !busy.has(k) && now - Math.max(s.used || 0, s.at || 0) > SYM_IDLE_TURN)
+        .sort((a, b) => (a[1].used || 0) - (b[1].used || 0))[0];
+      if (!old || !symDrop(old[0])) return false;
+    }
+  }
+  symSheet(name, "idle").catch(() => {});
+  const s = SYMF.sheets.get(key);
+  if (s) s.at = performance.now();
+  return true;
+}
+// the rig names on the board at these book positions (as the board stands now)
+const symNameAt = p => {
+  const r = p.reel, y = Math.min(Math.max(p.row - 1, 0), ROWS - 1), el = cellEls[r] && rigOf(cellEls[r][y]);
+  return el ? el._name : null;
+};
+const symWinName = w => Array.isArray(w) ? w[0] : w && w.symbol;
+// a spin starts (its reveal): its winners' hit clips come in, the last spin's hit and Multi clips and dissolves go
+function symSpin(evs, i) {
+  const want = new Set();
+  for (let j = i; j < evs.length; j++) {
+    const e = evs[j];
+    if (j > i && e.type === "reveal") break;
+    if (e.type === "winInfo") for (const w of e.wins || []) { const n = symWinName(w); if (n && SYMF.man && SYMF.man.symbols[n]) want.add(n); }
+  }
+  symDropAll(["hit", "multi"], new Set([...want].map(n => n + "_hit")));
+  symDropAll(["idle"], new Set([...SYM_ALWAYS].map(n => n + "_idle")));   // (an idle that was playing as the round began)
+  hexKitTrim(want);
+  for (const n of want) symSheet(n, "hit").catch(() => {});
+}
+// after each moment of a spin: the hit and Multi clips nothing left in it will play go now (a bonus's last spin's
+// clips are not still held under its TOTAL WIN). A Multi going off on a board not down yet has not had its clips in.
+function symKeep(evs, i) {
+  const keep = new Set();
+  let same = true;   // the board as it stands now is the one the next moments play on
+  for (let j = i; j < evs.length; j++) {
+    const e = evs[j];
+    if (e.type === "reveal") break;
+    if (e.type === "winInfo") for (const w of e.wins || []) { const n = symWinName(w); if (n) keep.add(n + "_hit"); }
+    if (e.type === "booster" && same) for (const b of e.boosters || []) for (const p of [b, ...(b.cells || [])]) { const n = symNameAt(p); if (n) keep.add(n + "_multi"); }
+    if (e.type === "tumbleBoard") same = false;
+  }
+  symDropAll(["hit", "multi"], keep);
+}
+// a board is down (after the reveal or a tumble): the Multi clips of the cells a Multi will power on it, and the
+// dissolves of the tiles it will hex away, before they are asked for
+function symBoard(evs, i) {
+  const multi = new Set(), hex = new Set();
+  for (let j = i; j < evs.length; j++) {
+    const e = evs[j];
+    if (e.type === "reveal") break;
+    if (e.type === "booster") for (const b of e.boosters || []) for (const p of [b, ...(b.cells || [])]) { const n = symNameAt(p); if (n) multi.add(n); }
+    if (e.type === "tumbleBoard") { for (const p of e.explodingSymbols || []) { const n = symNameAt(p); if (n) hex.add(n); } break; }
+  }
+  for (const n of multi) symSheet(n, "multi").catch(() => {});
+  hexKitTrim(hex);   // only the next tumble's dissolves are held (one still playing stays until it is done)
+  hexKitWarm(hex);
+}
+function symRoundEnd() {
+  symDropAll(["hit", "multi"]);
+  hexKitTrim(new Set());
+  // a bonus symbol's loop goes with it (one still on the board is playing it, so it stays)
+  for (const n of SYM_ALWAYS) symDrop(n + "_idle");
+}
+// a moment that plays `clip` on these cells waits for their clips to be in - never long, and not at all once they are
+async function symClipsIn(cells, clip, ms = 900) {
+  if (!SYM_DEMAND || REDUCED_MOTION) return;
+  const ps = [];
+  for (const cell of cells) {
+    const el = rigOf(cell), s = el && el._m.clips[clip] ? SYMF.sheets.get(el._name + "_" + clip) : null;
+    if (el && el._m.clips[clip] && !(s && s.ok)) ps.push(symSheet(el._name, clip).catch(() => {}));
+  }
+  if (ps.length) await Promise.race([Promise.all(ps), new Promise(r => setTimeout(r, state.skip ? ms / 3 : ms))]);
 }
 // A tile starts performing the moment it lands - its own landing, out of the drop; in the air it is a blur.
 // Every drop-in sends it, timed to its landing (dropIn: the reveal, a skipped reveal, a tumble's refill), at
@@ -4317,7 +4504,19 @@ function symIdleTick() {
   const cap = Math.max(1, Math.round(REELS * ROWS * SYM_IDLE_MAX_SHARE));
   for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++) {
     const cell = cellEls[r][y], el = rigOf(cell);
-    if (!el || symPlaying.has(el) || !SYMF.sheets.get(el._name + "_idle")?.ok) continue;
+    if (!el || symPlaying.has(el)) continue;
+    if (SYM_DEMAND) {   // (the mobile tier) the idle clip is asked for when it is due; none starts while a round plays
+      const always = SYM_ALWAYS.has(el._name);
+      if (state.playing && !always) continue;
+      if (!SYMF.sheets.get(el._name + "_idle")?.ok) {
+        if (always) symIdleWant(el._name);
+        else if (!el._idleAt) el._idleAt = now + Math.random() * SYM_IDLE_REST[1];
+        else if (now >= el._idleAt && (idling >= cap || SYMF.sheets.has(el._name + "_idle") || !symIdleWant(el._name))) {
+          if (!SYMF.sheets.has(el._name + "_idle")) el._idleAt = now + 500 + Math.random() * 1500;   // no room now: in a moment
+        }
+        continue;
+      }
+    } else if (!SYMF.sheets.get(el._name + "_idle")?.ok) continue;
     if (SYM_ALWAYS.has(el._name)) { rigPlay(cell, "idle", { loop: true, speed: 1 / SYM_IDLE_RATE }); continue; }   // never at rest, never counted
     if (!el._idleAt) el._idleAt = now + Math.random() * SYM_IDLE_REST[1];   // a new icon: its first cycle somewhere in the first rest
     else if (now >= el._idleAt) {
@@ -5027,7 +5226,24 @@ const nextTask = () => new Promise(r => setTimeout(r, 0));
 // Every kit cut while the loading screen is up, one per task (perf, 2026-11-09): they used to wait for idle
 // moments, which a busy board seldom has, so the first Multi's hex cut its kit mid-round
 function warmHexKits() {
-  return Object.values(FLAT).filter(Boolean).reduce((p, im) => p.then(() => picReady(im)).then(ok => { if (ok) hexKit(im); return nextTask(); }), Promise.resolve());
+  // (the mobile tier: only the potion's spirit, the voodoo skull's ghost; the rest are cut as a round's book asks for them -
+  // hexKitWarm - and let go after: 17 kits held for good were 14 MB of canvases on a phone)
+  const all = SYM_DEMAND ? [FLAT.ES].filter(Boolean) : Object.values(FLAT).filter(Boolean);
+  return all.reduce((p, im) => p.then(() => picReady(im)).then(ok => { if (ok) hexKit(im); return nextTask(); }), Promise.resolve());
+}
+// (SYM_DEMAND) cut these symbols' dissolves ahead, one per task
+function hexKitWarm(names) {
+  if (!VOODOO || REDUCED_MOTION) return;
+  [...names].reduce((p, n) => p.then(() => { const im = FLAT[n]; if (im && im.complete && im.naturalWidth) hexKit(im); return nextTask(); }), Promise.resolve());
+}
+// (SYM_DEMAND) let every dissolve go but these symbols' (and the spirit's), unless one is on the board now
+function hexKitTrim(keep) {
+  const keepSrc = new Set([...keep, "ES"].map(n => FLAT[n] && FLAT[n].src).filter(Boolean));
+  for (const [src, kit] of [...hexKits]) {
+    if (keepSrc.has(src) || bursts.some(b => b.kit === kit || b.ghost === kit.ghost)) continue;
+    hexKits.delete(src);
+    for (const c of [...kit.frames, kit.ghost]) if (c) { c.width = 0; c.height = 0; }   // the backing store goes now, not at the next GC
+  }
 }
 // what the round draws for the first time - the dissolves and the motion blur - made once, before play
 let fxReady = null;
@@ -5389,7 +5605,9 @@ const Knock = (() => {
     if (bk.y) bk.y *= u;
     if (wk && wk.y) wk.y *= u;
     kick("board", bk);
-    if (wk) setTimeout(() => kick("wall", wk), BODY.wall.lag);
+    // (the mobile tier, review 3: the board still takes the knock, the painting behind it holds still - moving it made
+    // the whole screen a layer of its own, ~12 MB on an iPhone, at every spin and refill)
+    if (wk && !window.MOBILE) setTimeout(() => kick("wall", wk), BODY.wall.lag);
   };
   let spunAt = -1e9, rumbleT = 0;
   return {
@@ -6353,6 +6571,16 @@ const decodeAudio = b => {
   });
 };
 const OPUS_OK = (() => { try { return !!new Audio().canPlayType('audio/ogg; codecs="opus"'); } catch (e) { return false; } })();
+// (the mobile tier, iOS memory review 3, 2026-11-16) Decoded sound was ~53 MB on a phone (the base loop alone 19 MB of
+// float samples). There the music is not decoded at all: one <audio> element streams the cue that is playing, through
+// the same music bus (its bar and fades are unchanged), and is swapped for the next cue - a short fade out and in instead
+// of an overlapping cross-fade, and a loop goes round by a seek (a seam of a few ms where it was sample-exact). The
+// effects are decoded once, in mono (a phone's speaker plays them as one anyway); the ones a phone never plays (the
+// mouse hover hum and tick, Doc's foley) are not fetched, and the studio ident's are let go once it has gone.
+// ?musicstream=0 decodes the music as before (QA).
+const MUSIC_STREAM = !!window.MOBILE && !/[?&]musicstream=0\b/.test(location.search);
+const SFX_MONO = !!window.MOBILE;
+const SFX_NOT_HERE = window.MOBILE ? /^(hoverLoop|uiHover|caneTap|magicPoof|hatSwish|caneSpin)(_\d+)?$/ : /^$/;
 // the bytes come down with the page - the base game's first, the others once it is in; only the
 // decode waits for the context
 const musicRaw = {};
@@ -6360,7 +6588,9 @@ const fetchMusic = name => musicRaw[name] || (musicRaw[name] =
   fetch(OPUS_OK ? MUSIC[name].ogg : MUSIC[name].aac).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null));
 // preloaded once the loading screen is done (symRestGate), so ~3.6 MB of music never shares the line with what it waits on;
 // a cue asked for before then fetches itself
-symRestGate.then(() => fetchMusic("base")).then(() => Object.keys(MUSIC).forEach(name => fetchMusic(name)));
+// (MUSIC_STREAM: the element fetches its own cue; the cues are only brought into the browser's cache ahead, not held)
+if (MUSIC_STREAM) symRestGate.then(() => Object.values(MUSIC).reduce((p, m) => p.then(() => fetch(OPUS_OK ? m.ogg : m.aac).then(r => r.blob()).catch(() => {})), Promise.resolve()));
+else symRestGate.then(() => fetchMusic("base")).then(() => Object.keys(MUSIC).forEach(name => fetchMusic(name)));
 const musicTrack = {};   // name -> Promise<{ buf, at } | null>; at: where the cue's first frame sits in buf, in seconds
 function loadTrack(name) {
   if (musicTrack[name]) return musicTrack[name];
@@ -6387,6 +6617,7 @@ const MUSIC_KEEP = ["base", "intro"], MUSIC_NEXT = { intro: "bonus", bonus: "tot
 function musicTo(name, fade = 1.6) {
   music.want = name;
   if (!music.on || !actx) return;
+  if (stream.el) { streamTo(name, fade); return; }
   const live = music.playing[name];
   if (live && !live.leaving) {   // already the one playing
     for (const other of Object.keys(music.playing)) if (other !== name) musicFadeOut(other, fade);
@@ -6449,10 +6680,77 @@ function musicFadeOut(name, fade, when) {
   };
   for (const src of p.srcs) src.stop(gone + .05);
 }
+// (MUSIC_STREAM) the one element the music streams through: made, wired into the music bus and first played in the
+// first touch (iOS lets an element play by itself after that), then handed each cue in turn
+const stream = { el: null, g: null, name: null, swap: 0, loopStart: 0, len: 0, timer: 0 };
+function streamInit() {
+  if (stream.el || !actx) return !!stream.el;
+  try {
+    const el = new Audio();
+    el.preload = "auto";
+    const g = actx.createGain();
+    g.gain.value = 0;
+    g.connect(musicBus);
+    actx.createMediaElementSource(el).connect(g);
+    Object.assign(stream, { el, g });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) el.pause();
+      else if (stream.name && music.on) el.play().catch(() => {});
+    });
+  } catch (e) { stream.el = null; return false; }   // (no media source node: the music is decoded as before)
+  return true;
+}
+// seconds into the playing cue's loop
+const streamPos = () => {
+  const el = stream.el, p = el ? el.currentTime - stream.loopStart : 0;
+  return stream.len > 0 && p > 0 ? p % stream.len : 0;
+};
+function streamTo(name, fade) {
+  const m = MUSIC[name], el = stream.el, g = stream.g;
+  if (!m || (stream.name === name && !stream.leaving)) return;
+  const now = actx.currentTime, out = stream.name ? (m.head ? .08 : Math.min(.6, fade)) : 0;
+  if (stream.name && !stream.leaving) {
+    if (LOOP_RESUMES.includes(stream.name)) music.resume[stream.name] = streamPos();
+    g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0, now + out);
+  }
+  const token = ++stream.swap;
+  stream.leaving = true;
+  const swap = () => {
+    if (token !== stream.swap) return;
+    stream.name = name; stream.leaving = false;
+    stream.loopStart = 0; stream.len = m.frames / MUSIC_RATE;
+    g.gain.cancelScheduledValues(actx.currentTime); g.gain.setValueAtTime(0, actx.currentTime);
+    el.src = OPUS_OK ? m.ogg : m.aac;
+    el.play().catch(() => {});   // (in the first touch this is the press that lets it play from now on)
+    const go = () => {
+      if (token !== stream.swap) return;
+      const R = MUSIC_RATE;
+      // the AAC copy carries the encoder's frames and a little of the loop's end in front of the cue (aacStart)
+      const at = !OPUS_OK && isFinite(el.duration) ? Math.max(0, (m.aacStart - Math.max(0, m.aacFrames - el.duration * R)) / R) : 0;
+      stream.loopStart = at + (m.headLen || 0) / R;
+      try { el.currentTime = m.head ? at : stream.loopStart + (music.resume[name] || 0); } catch (e) { /* plays from the top */ }
+      const t = actx.currentTime;
+      g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(m.level, t + (m.head ? .02 : fade));
+    };
+    if (el.readyState >= 1) go(); else el.addEventListener("loadedmetadata", go, { once: true });
+  };
+  if (out > 0) setTimeout(swap, out * 1000); else swap();
+  // round the loop: back by its length once it reaches its end (or the file does)
+  if (!stream.timer) stream.timer = setInterval(() => {
+    const e = stream.el;
+    if (!e || !stream.name || stream.leaving || stream.len <= 0 || (e.paused && !e.ended)) return;
+    const end = stream.loopStart + stream.len;
+    if (e.ended || e.currentTime >= end - .03) {
+      try { e.currentTime = stream.loopStart + Math.max(0, Math.min(stream.len - .1, e.currentTime - end)); } catch (x) {}
+      if (e.paused) e.play().catch(() => {});
+    }
+  }, 40);
+}
 // the first touch opens the sound: the wanted loop fades up slowly under the game
 function startMusic() {
   if (music.on || !audio()) return;
   music.on = true;
+  if (MUSIC_STREAM) streamInit();
   musicTo(music.want, 2.5);
 }
 const sfxBuf = {};
@@ -6465,7 +6763,29 @@ const wavOf = url => fetch(url).then(r => r.ok ? r.arrayBuffer() : null).catch((
 const sfxFetch = url => OPUS_OK
   ? fetch(url.replace(/\.wav$/, ".ogg")).then(r => r.ok ? r.arrayBuffer() : wavOf(url)).catch(() => wavOf(url))
   : wavOf(url);
-for (const [name, url] of Object.entries(SFX)) sfxRaw[name] = sfxFetch(url);
+for (const [name, url] of Object.entries(SFX)) if (!SFX_NOT_HERE.test(name)) sfxRaw[name] = sfxFetch(url);
+// (mobile) one channel: the average of the file's, in a buffer of the context's own (the stereo one is let go)
+function monoOf(buf) {
+  if (!buf || buf.numberOfChannels < 2 || !actx) return buf;
+  try {
+    const n = buf.numberOfChannels, out = actx.createBuffer(1, buf.length, buf.sampleRate), o = out.getChannelData(0);
+    for (let c = 0; c < n; c++) { const d = buf.getChannelData(c); for (let i = 0; i < d.length; i++) o[i] += d[i] / n; }
+    return out;
+  } catch (e) { return buf; }
+}
+// the studio ident's effects (INTRO_SFX's takes); let go once the ident has gone (mobile)
+const sfxIdent = name => /^(introRise|introWhoosh|introHit|introShimmer|introOut|landBrick)(_\d+)?$/.test(name);
+function sfxDecodeOne(name) {
+  if (sfxDecoding[name]) return sfxDecoding[name];
+  if (!sfxRaw[name] || !actx) return Promise.resolve();
+  return (sfxDecoding[name] = sfxRaw[name].then(b => b && decodeAudio(b))
+    .catch(() => wavOf(SFX[name]).then(b => b && decodeAudio(b)))   // an Opus copy that will not decode: the WAV
+    .then(buf => { if (buf) sfxBuf[name] = SFX_MONO ? monoOf(buf) : buf; if (SFX_MONO) delete sfxRaw[name]; })
+    .catch(() => {}));   // a missing clip just means silence, never a broken round
+}
+function sfxForgetIdent() {
+  for (const name of Object.keys(SFX)) if (sfxIdent(name)) { delete sfxBuf[name]; delete sfxRaw[name]; delete sfxDecoding[name]; }
+}
 
 function bezierY(x1, y1, x2, y2) {          // CSS cubic-bezier as a function of progress
   const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
@@ -6523,18 +6843,28 @@ function audio() {
     sfxBus = actx.createGain(); sfxBus.connect(actx.destination);
     musicBus = actx.createGain(); musicBus.connect(actx.destination);
     applyVolumes();
-    for (const name of Object.keys(SFX)) {
-      sfxDecoding[name] = sfxRaw[name].then(b => b && decodeAudio(b))
-        .catch(() => wavOf(SFX[name]).then(b => b && decodeAudio(b)))   // an Opus copy that will not decode: the WAV
-        .then(buf => { if (buf) sfxBuf[name] = buf; })
-        .catch(() => {});   // a missing clip just means silence, never a broken round
+    // (mobile) the studio ident's effects only while it is still up: once it has gone they are never played again
+    const identUp = !!$("intro") && !$("intro").classList.contains("gone");
+    const names = Object.keys(SFX).filter(name => sfxRaw[name] && !(window.MOBILE && !identUp && sfxIdent(name)));
+    if (!SFX_MONO) for (const name of names) sfxDecodeOne(name);
+    else {
+      // (mobile) one at a time, a beat apart, the ident's first: each stereo decode is let go for its mono copy, and
+      // decoding them all at once held every one of those at the same time (a ~30 MB spike). One asked for before
+      // its turn is decoded there and then (sfx).
+      names.sort((a, b) => sfxIdent(b) - sfxIdent(a));
+      const pump = () => {
+        const name = names.shift();
+        if (!name) return;
+        (sfxDecoding[name] || sfxDecodeOne(name)).then(() => setTimeout(pump, 90));
+      };
+      pump();
     }
   }
   if (actx.state === "suspended") actx.resume().catch(() => {});
   return actx;
 }
 // browsers only allow audio once the player has interacted — first gesture opens the context
-addEventListener("pointerdown", () => { audio(); startMusic(); if (actx) loadTrack("intro"); }, { once: true });   // the intro is decoded ahead of the first bonus
+addEventListener("pointerdown", () => { audio(); startMusic(); if (actx && !stream.el) loadTrack("intro"); }, { once: true });   // the intro is decoded ahead of the first bonus
 
 function sfx(name, rate = 1) {
   if (vol.sfx <= 0) return;   // the bar is at the bottom: don't even open the context
@@ -6548,7 +6878,7 @@ function sfx(name, rate = 1) {
   if (!sfxBuf[name]) {
     // asked for before the clip has decoded (the first press after the page opens): play it
     // the moment it has, as long as that is still the same beat, otherwise let it go
-    const at = performance.now(), pending = sfxDecoding[name];
+    const at = performance.now(), pending = sfxDecoding[name] || (SFX_MONO ? sfxDecodeOne(name) : null);
     if (pending) pending.then(() => { if (sfxBuf[name] && performance.now() - at < 600) sfx(name, rate); });
     return;
   }
@@ -6736,6 +7066,7 @@ const handlers = {
       const m = w.meta || {};
       const mult = m.multiplier ?? 1;
       const size = w.kind ?? m.clusterSize ?? w.positions.length;
+      await symClipsIn(w.positions.map(p => cellEls[p.reel][p.row - 1]), "hit");   // (mobile) its hit clips are in
       clearFxWins();
       for (const p of w.positions) restyle(cellEls[p.reel][p.row - 1]);   // apply the removal so every cluster's tiles pop in fresh,
                                      // including cells carried over from the previous cluster
@@ -6900,6 +7231,10 @@ const handlers = {
     // the same, and only once they have all played through does its value land on the five.
     // The tumbleBoard that follows clears them (together with the paid cluster symbols) and
     // drops new symbols in on top of the numbers. Skipping shortens this; never hides it.
+    if (SYM_DEMAND) {   // (mobile) every Multi clip this board plays is in
+      const at = p => cellEls[p.reel][Math.min(Math.max(p.row - 1, 0), ROWS - 1)];
+      await symClipsIn((ev.boosters || []).flatMap(b => [b, ...(b.cells || [])]).map(at), "multi");
+    }
     clearFxWins();
     $("board").classList.add("spotlight");
     // Several Multis on one board go off in a quick run rather than one after another: each starts
@@ -7477,12 +7812,17 @@ async function presentRound(round, { settle = true } = {}) {
   state.roundPayout = typeof round.payout === "number" ? round.payout : Math.round(mult * bet());
   console.debug(`round ${round.betID ?? round.id} pays ${mult.toFixed(2)}x bet`);
   const evs = round.events || [];
+  if (SYM_DEMAND) symDropAll(["idle"], new Set([...SYM_ALWAYS].map(n => n + "_idle")));   // (mobile) the idles rest through a round
   for (let i = 0; i < evs.length; i++) {
     const ev = evs[i];
     state.peek = evs[i + 1] || null;   // a handler can look one event ahead (the bonus upgrade shows one screen, not two)
+    if (SYM_DEMAND && ev.type === "reveal") symSpin(evs, i);   // (mobile) the clips this spin plays, read off the book
     const fn = handlers[ev.type];
     if (fn) await fn(ev);
+    if (SYM_DEMAND && (ev.type === "reveal" || ev.type === "tumbleBoard")) symBoard(evs, i + 1);
+    if (SYM_DEMAND) symKeep(evs, i + 1);
   }
+  if (SYM_DEMAND) symRoundEnd();
 
   // teased a bonus and never got there
   if (state.anticipated && !state.bonusHit) charReact("lose");
@@ -8902,11 +9242,13 @@ document.addEventListener("keydown", e => {
 // Every kind of icon baked once into a sprite, and its soft shadow into one of its own (at half
 // the pixels - it is only a blur), so the icons drifting round the loading screen and the ones
 // raining down behind a big win are nothing but drawImage calls on a canvas, however many.
-const ICON_SPRITE = 208;   // px square: the biggest icon either draws, at twice its size, for sharp 2x screens
+// px square: the biggest icon either draws, at twice its size, for sharp 2x screens (a phone's rain draws them at most
+// ~56 css px across at 1.5x: 128 is still over that - the mobile tier, review 3)
+const ICON_SPRITE = window.PHONE ? 128 : 208;
 let iconKinds = null;
 function iconSprites() {
   if (iconKinds) return iconKinds;
-  const S = ICON_SPRITE, HALF = S / 2, BLUR = 15, PAD = 2 * BLUR;
+  const S = ICON_SPRITE, HALF = S / 2, BLUR = Math.round(15 * S / 208), PAD = 2 * BLUR;   // (the blur in proportion to the sprite)
   iconKinds = Object.values(SYM).map(s => s.img).filter(Boolean).map(src => {
     const kind = { icon: null, shade: null };   // both stay null until the art has loaded
     const img = new Image();
@@ -9231,8 +9573,11 @@ function runIntro() {
     if (REDUCED_MOTION) { wrap.classList.add("gone"); setTimeout(() => wrap.remove(), 700); settle(); return; }
     play("introOut");
     wrap.classList.add("out");                                     // the word lifts away
-    setTimeout(() => { wrap.classList.add("gone"); settle(); }, 520);   // and the screen fades through black
-    setTimeout(() => wrap.remove(), 1300);
+    setTimeout(() => {
+      wrap.classList.add("gone"); settle();   // and the screen fades through black
+      if (window.MOBILE && window.BoardGL && BoardGL.touch) requestAnimationFrame(() => BoardGL.touch());   // (the board shown again: drawn again)
+    }, 520);
+    setTimeout(() => { wrap.remove(); if (window.MOBILE) sfxForgetIdent(); }, 1300);
   };
   const loaded = preloadAll(p => { if (fill) fill.style.width = (p * 100).toFixed(1) + "%"; });
   loaded.then(() => { if (fill) fill.style.width = "100%"; symRestGo(); if (!VOODOO) warmBursts(); });   // (no icon bursts in the voodoo build: each is hexed)
@@ -9598,7 +9943,7 @@ function startIconRain(host) {
     raf = requestAnimationFrame(tick);
   };
   const draw = (w, h) => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(window.MOBILE ? 1.5 : 2, devicePixelRatio || 1);   // (mobile: a screen-sized canvas, 5.3 -> 3 MB on an iPhone)
     const cw = Math.round(w * dpr), ch = Math.round(h * dpr);
     if (layer.width !== cw || layer.height !== ch) { layer.width = cw; layer.height = ch; }   // (clears it too)
     else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cw, ch); }
@@ -9626,7 +9971,7 @@ function startIconRain(host) {
     stopped = true;
     clearTimeout(spawnTimer);
     layer.classList.add("done");
-    setTimeout(() => { cancelAnimationFrame(raf); if (ro) ro.disconnect(); layer.remove(); }, 400);
+    setTimeout(() => { cancelAnimationFrame(raf); if (ro) ro.disconnect(); layer.remove(); if (window.MOBILE) layer.width = layer.height = 0; }, 400);   // (mobile: its backing store goes now, not at the next GC)
   };
 }
 // The HUD bar drops off the screen while a win popup is up, and pops back once it has gone.
@@ -9660,7 +10005,7 @@ function totalWinScreen(amount, { total = true } = {}) {
       `<div class="twin">` +
         `<div class="twhead blank">` +   // every headline the popup can show, stacked, so a swap is instant
           [...WIN_TIERS.map(t => t.art), "total_win.webp"].map(art =>
-            `<img class="twlogo" data-art="${art}" src="assets/${art}" alt="" draggable="false">`).join("") +
+            `<img class="twlogo" data-art="${art}" src="${mobArt("assets/" + art)}" alt="" draggable="false">`).join("") +
           `<i class="twsheen" aria-hidden="true"></i>` +   // the band of light across the lettering
         `</div>` +
         `<div class="twamount"><div class="twfig">${numeralRow(fmt(0))}</div></div>` +
@@ -9926,6 +10271,19 @@ function tiltPlates(plates) {
   return { stop() { stopped = true; if (raf) cancelAnimationFrame(raf); raf = 0; } };
 }
 tiltPlates(document.querySelectorAll(".bonuscard"));   // the buy-bonus cards carry the same 3D (see .bonuscard)
+// (mobile) every picture under `root` decoded - <img>s and the CSS pictures of what is in it - or `ms` gone by
+function decodeIn(root, ms) {
+  if (!root) return Promise.resolve();
+  const urls = new Set(), jobs = [];
+  for (const el of [root, ...root.querySelectorAll("*")]) {
+    if (!el.getClientRects().length) continue;   // no box (display: none here or above): never painted
+    if (el.tagName === "IMG") { if (el.decode && el.currentSrc) jobs.push(el.decode().catch(() => {})); continue; }
+    const bg = getComputedStyle(el).backgroundImage;
+    if (bg && bg !== "none") for (const m of bg.matchAll(/url\("?([^")]+)"?\)/g)) urls.add(m[1]);
+  }
+  for (const u of urls) { const im = new Image(); im.src = u; if (im.decode) jobs.push(im.decode().catch(() => {})); }
+  return Promise.race([Promise.all(jobs), new Promise(r => setTimeout(r, ms))]);
+}
 function runFeatures() {
   if (RGS.replayParams().replay) return;
   let settle;
@@ -9942,10 +10300,10 @@ function runFeatures() {
       box(`<img src="${SYM.M.img}" alt="${T("Multi")}" draggable="false"><div class="fmult" id="featMult" aria-label="x${fmtMult(FEATURE_VALUES[0])}">${[..."x" + fmtMult(FEATURE_VALUES[0])].map(ch => `<i class="vg g-${VGLYPH[ch] || ch}"></i>`).join("")}</div>`,
         T("Multi"),
         T(`Lands with a value from <b>x1.25</b> to <b>x1000</b> - sometimes in a line of 3 or 4, and once in a long while over the whole board. Every winning cluster is paid first; then it blows out and leaves its value on five cells, and a cluster on those cells is multiplied by the <b>sum</b> it covers. Winning clusters drop small multipliers under themselves too.`)) +
-      box(`<img src="${SYM.BS.img}" alt="${T("FS scatter")}" draggable="false">`,
+      box(`<img src="${mobArt(SYM.BS.img)}" alt="${T("FS scatter")}" draggable="false">`,
         T("FS scatter \u00b7 Bonus"),
         T(`<b>3</b>, <b>4</b> or <b>5</b> anywhere award <b>10</b>, <b>12</b> or <b>15</b> free spins. Multis land more often and drop in lines, and every value - a Multi's or a cluster's drop - stays on the board for the whole bonus.`)) +
-      box(`<img src="${SYM.ES.img}" alt="${T("XFS scatter")}" draggable="false">`,
+      box(`<img src="${mobArt(SYM.ES.img)}" alt="${T("XFS scatter")}" draggable="false">`,
         T("XFS scatter \u00b7 Extreme"),
         T(`<b>2</b> anywhere award <b>17</b> free spins under Extreme rules: Multis land more often still, drop in lines, and every value is <b>x2</b> or more. A FS scatter trigger with a XFS scatter on the same spin is upgraded to Extreme.`)) +
     `</div>` +
@@ -9978,7 +10336,9 @@ function runFeatures() {
   // the Multi's value climbs the table and warms with it, round and round
   const stopMult = cycleMult(wrap.querySelector("#featMult"));
   // it fades up as the opening screen goes, the three plates stacked in the middle and dealt out
-  introDone.then(() => requestAnimationFrame(() => { fanPlates(wrap); wrap.classList.add("up"); }));
+  // (mobile: the screen is not painted until it is up, so its pictures are decoded first - a moment at most - and it
+  // cuts in, never blank)
+  introDone.then(() => window.MOBILE ? decodeIn(wrap, 300) : null).then(() => requestAnimationFrame(() => { fanPlates(wrap); wrap.classList.add("up"); }));
   let done = false;
   const finish = () => {
     if (done || !wrap.classList.contains("up")) return;   // not before it has shown
@@ -9986,8 +10346,14 @@ function runFeatures() {
     stopMult();
     document.removeEventListener("keydown", onKey, true);
     sfx("bet", 1.1);
-    wrap.classList.add("gone");                        // the plates fade out
-    document.body.classList.remove("features-up");    // and the game fades in beneath them
+    const show = () => {
+      wrap.classList.add("gone");                        // the plates fade out
+      document.body.classList.remove("features-up");    // and the game fades in beneath them
+      // (mobile: the board's canvas drew while #app was not shown, and a hidden canvas's frames are never put on screen)
+      if (window.MOBILE && window.BoardGL && BoardGL.touch) requestAnimationFrame(() => BoardGL.touch());
+    };
+    // (mobile: the game under the screen was not painted - its pictures are decoded first, a moment at most, then it cuts in)
+    if (window.MOBILE) decodeIn($("app"), 300).then(show); else show();
     setTimeout(() => {
       tilt.stop();
       wrap.remove();
@@ -10035,8 +10401,8 @@ function bonusIntro(spins, extreme) {
       `<div class="wall"></div>` +
       `<div class="inner"><div class="bstack">` +
         (extreme
-          ? `<img class="blogo" src="assets/xbonus_text.webp" alt="${T("Xtreme Bonus")}" draggable="false">`
-          : `<img class="blogo" src="assets/bonus_btn_text.webp" alt="${T("Bonus")}" draggable="false">`) +
+          ? `<img class="blogo" src="${mobArt("assets/xbonus_text.webp")}" alt="${T("Xtreme Bonus")}" draggable="false">`
+          : `<img class="blogo" src="${mobArt("assets/bonus_btn_text.webp")}" alt="${T("Bonus")}" draggable="false">`) +
         `<div class="byou">${T("You won")}</div>` +
         `<div class="bnum" aria-label="${spins}"><i class="brays" aria-hidden="true"></i><div class="bfig">${numeralRow(REDUCED_MOTION ? String(spins) : "0")}</div></div>` +
         `<div class="bfs">${T("Free spins")}</div>` +

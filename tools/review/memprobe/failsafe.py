@@ -19,6 +19,10 @@ try:
     # the replay viewer swallows an exception from the round (it shows it in the ticker): surface it here
     b.js("""(() => { const real = window.presentRound; window.presentRound = async (...x) => {
       try { return await real(...x); } catch (e) { console.error('presentRound threw: ' + (e && e.stack || e)); throw e; } }; })()""")
+    # (review 3) a bonus's intro and its TOTAL WIN wait for a press: given one once they have been up ~3 s (as iosprobe3)
+    b.js("""(() => { clearInterval(window.__clk); const seen = {};
+      window.__clk = setInterval(() => { for (const s of ['.bonusintro', '.totalwin']) { const e = document.querySelector(s);
+        if (e && e.getBoundingClientRect().width > 0) { seen[s] = (seen[s] || 0) + 1; if (seen[s] > 8) { e.click(); seen[s] = 0; } } } }, 400); })()""")
     b.js("window.__t0 = performance.timeOrigin; window.__c0 = performance.now(); document.getElementById('replayPlay').click(); 1")
     time.sleep(2.5)
     lost = b.js("""(() => { let n = 0;

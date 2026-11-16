@@ -31,6 +31,9 @@
     p.then(b => track(M.audio, b), () => {});
     return p;
   };
+  // (2026-11-16, review 3) buffers made on the page too: the mobile tier keeps its effects as mono copies it makes itself
+  const cb = BaseAudioContext.prototype.createBuffer;
+  BaseAudioContext.prototype.createBuffer = function (...a) { const b = cb.apply(this, a); if (b && b.length > 4096) track(M.audio, b); return b; };
   const sd = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
   Object.defineProperty(HTMLImageElement.prototype, "src", {
     configurable: true, enumerable: true,
