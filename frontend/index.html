@@ -23,6 +23,41 @@ window.MOBILE = (() => {
   return ios || (touch && (/Android|Mobi|Tablet|Silk|Kindle/i.test(ua) || small));
 })();
 document.documentElement.classList.toggle("mob", window.MOBILE);
+// Phone copies of the art a phone shows at well under its pixels (iOS memory, 2026-11-16; tools/nola/make_mobile_art.py,
+// assets/mobile/lite/): the iron frame and its backing, the features screen's title and its plates - each sized to
+// the biggest a phone ever draws it, plus headroom, so it is still drawn by scaling down and looks the same (the
+// bonus shop's banners and the scatters' flat icons were tried and left full: a phone draws those 3-5x smaller than
+// their files, and a copy drew visibly softer than the browser's own scaling of the full picture). A phone only (the mobile tier on a screen no wider than 500 CSS px on its short
+// side): a tablet and the desktop keep the full pictures. ?mobart=1|0 forces it (QA).
+window.PHONE = !!window.MOBILE && Math.min(screen.width || 9999, screen.height || 9999) <= 500;
+window.MOBART = (() => {
+  const q = new URLSearchParams(location.search).get("mobart");
+  if (q === "1" || q === "0") return q === "1";
+  return window.PHONE;
+})();
+document.documentElement.classList.toggle("mobart", window.MOBART);
+window.MOBART_ART = /^(.*?)assets\/(frame|board_back|title_logo|feature_box)\.webp$/;
+window.mobArt = u => {
+  const m = window.MOBART && window.MOBART_ART.exec(u);
+  return m ? m[1] + "assets/mobile/lite/" + m[2] + ".webp" : u;
+};
+// The safety net (all tiers; from Tipsy Harvest's iOS reviews, zeqpz/fallslotsga 9694dd3): it does nothing until
+// something fails. WebKit hands back no 2D context (null) when it is out of canvas memory, and a WebGL context can be
+// lost; either sets GFX.low, every 2D context the effects ask for goes through gfxCtx() and an effect whose canvas is
+// refused is simply left out - one console.warn, never an exception, never a reload.
+window.GFX = { low: false, why: "" };
+window.gfxLow = why => {
+  if (GFX.low) return;
+  GFX.low = true; GFX.why = why;
+  try { console.warn("graphics: " + why + " - the effects that need a new canvas are left out from now on"); } catch (e) {}
+};
+window.gfxCtx = (c, type, opts) => {
+  let g = null;
+  try { g = c.getContext(type || "2d", opts); } catch (e) {}
+  if (!g) gfxLow("a " + (type || "2d") + " canvas was refused");
+  return g;
+};
+addEventListener("webglcontextlost", () => gfxLow("a WebGL context was lost"), true);   // (captured on its way down to the canvas)
 </script>
 <style>
   :root {
@@ -3415,6 +3450,27 @@ document.documentElement.classList.toggle("mob", window.MOBILE);
   html.mob .rpwrap { background: rgba(6, 8, 18, .6); }
   html.mob .rpwrap.done { background: rgba(6, 8, 18, .35); }
 </style>
+<style>
+  /* the phone copy of the title is drawn in the full picture's proportions (its own are a hair off: 1340x714) */
+  html.mobart .features .ftitle { aspect-ratio: 2400 / 1279; }
+</style>
+<script>
+// (phone art) the stylesheet's pictures with a phone copy point at it before anything has asked for them
+if (window.MOBART) (() => {
+  const re = /assets\/(feature_box)\.webp/g;
+  const walk = rules => {
+    for (const r of rules) {
+      const st = r.style;
+      if (st && st.cssText.indexOf("assets/") >= 0) {
+        const v = st.cssText, w = v.replace(re, (all, n) => "assets/mobile/lite/" + n + ".webp");
+        if (w !== v) st.cssText = w;
+      }
+      if (r.cssRules) walk(r.cssRules);
+    }
+  };
+  for (const sh of document.styleSheets) { try { walk(sh.cssRules); } catch (e) { /* not ours */ } }
+})();
+</script>
 </head>
 <body>
 <div id="camfar" class="camlayer"><div id="bgwall"><div id="wallpaint" aria-hidden="true"></div><div id="tagspill" class="tagfx" aria-hidden="true"><i></i></div><img id="walltag" alt="" width="3303" height="1674" alt="" draggable="false"><div id="tagglow" class="tagfx" aria-hidden="true"><i></i><b class="sheen"><b><i></i></b></b></div></div>
@@ -3424,7 +3480,8 @@ document.documentElement.classList.toggle("mob", window.MOBILE);
 <div id="app">
 <div class="main">
   <div class="stage">
-    <div class="board" id="board"><div class="boardplate" aria-hidden="true"></div><img id="paintback" src="assets/board_back.webp" alt="" draggable="false" aria-hidden="true"><img id="paintframe" src="assets/frame.webp" alt="" draggable="false"></div>
+    <div class="board" id="board"><div class="boardplate" aria-hidden="true"></div><img id="paintback" alt="" draggable="false" aria-hidden="true"><img id="paintframe" alt="" draggable="false"></div>
+    <script>document.getElementById("paintback").src = mobArt("assets/board_back.webp"); document.getElementById("paintframe").src = mobArt("assets/frame.webp");</script>
     <div class="ticker" id="ticker">Draws come from the optimized 96.7% RTP lookup tables — the real math.</div>
     <div class="banner" id="banner"><div class="big" id="bannerBig"></div><div class="sub2" id="bannerSub"></div><img id="bannerMural" class="muralimg" alt=""></div>
     <div class="tally" id="tally">0.00</div>
@@ -4021,7 +4078,11 @@ function symHoldScale() {
   const unit = Math.min(c.clientWidth * .88, c.clientHeight * .88) / 100;
   const fit = c.getBoundingClientRect().width / c.offsetWidth;
   const L = Math.max(screen.availWidth || 0, screen.availHeight || 0);
-  const grow = Math.max(1, Math.min(L / innerWidth, L / innerHeight) || 1);
+  // (a phone: 1. Its board is as wide as the screen in portrait whatever the browser's bars take off the height, and
+  // smaller on its side, so no window it can have shows the symbols bigger than this. The screen-over-window ratio
+  // read the bars as room to grow: Safari's toolbar (an 844 px screen, a 664 px window) cut every clip 1.27x too big
+  // each way - 105 -> 169 MB of textures for the same picture. iOS memory, 2026-11-16)
+  const grow = window.PHONE ? 1 : Math.max(1, Math.min(L / innerWidth, L / innerHeight) || 1);
   const k = unit * (fit > 0 ? fit : 1) * dpr * grow * SYM_HOLD_HEADROOM / (parseInt(SYMF.density.slice(1), 10) / 10);
   return k >= .85 || !isFinite(k) ? 1 : Math.max(.3, k);
 }
@@ -4081,7 +4142,10 @@ function loadSymFrames() {
     if (window.BoardGL) await BoardGL.init();   // one canvas for the whole board, where WebGL is there
     SYMF.density = symWantDensity();
     SYMF.k = symHoldScale();
-    const ids = Object.keys(man.symbols);
+    // only the symbols this game can land: the symbol table and the potion's colours (FLAT holds both). The manifest
+    // still lists the seven lows the 5x5 math dropped (L2, L5-L10), whose four clips each were fetched, decoded and
+    // put on the GPU for nothing - ~40 MB of textures on a phone (iOS memory, 2026-11-16)
+    const ids = Object.keys(man.symbols).filter(id => SYM[id] || FLAT[id]);
     // the landings hold the rest pose and play as every tile drops in: the board waits on them. The wins
     // follow behind the loading screen, then the idles every resting symbol loops, then the multipliers - a
     // clip at a time, every symbol's at once.
@@ -4116,10 +4180,11 @@ function rigEl(name, label) {
     symRest(el);
     return el;
   }
-  const cv = document.createElement("canvas");
+  const cv = document.createElement("canvas"), cx = gfxCtx(cv);
+  if (!cx) return null;   // (the safety net) no canvas for it: the flat icon stands in
   cv.className = "symc";
   el.append(cv);
-  Object.assign(el, { _name: name, _m: m, _cv: cv, _ctx: cv.getContext("2d"), _clip: null, _box: null, _shown: "" });
+  Object.assign(el, { _name: name, _m: m, _cv: cv, _ctx: cx, _clip: null, _box: null, _shown: "" });
   symRest(el);
   return el;
 }
@@ -4657,18 +4722,24 @@ function paintGrid() { placeMultLayer(); for (let r = 0; r < REELS; r++) for (le
 // hanging past the board's edges so a piece can fly over the frame; a frame loop while anything
 // is in the air, nothing when there is not.
 const BURST_PAD = 96;
-let shardCanvas = null, shardCtx = null, burstDpr = 1;   // the burst layer over the board, and its device px per css px
+let shardCanvas = null, shardCtx = null, burstDpr = 1, shardRefused = -1e9;   // the burst layer over the board, and its device px per css px
 function shardLayer() {
   const board = $("board");
   if (!board) return null;
   if (!shardCanvas) {
+    if (performance.now() - shardRefused < 1000) return null;   // (the safety net: asked again at most once a second)
     shardCanvas = document.createElement("canvas");
+    shardCtx = gfxCtx(shardCanvas);
+    if (!shardCtx) { shardCanvas = null; shardRefused = performance.now(); return null; }
     shardCanvas.className = "shardlayer";
     board.appendChild(shardCanvas);   // over everything
-    shardCtx = shardCanvas.getContext("2d");
   }
   const w = board.offsetWidth + BURST_PAD * 2, h = board.offsetHeight + BURST_PAD * 2;
-  const dpr = Math.min(2, devicePixelRatio || 1);
+  // (the mobile tier, iOS memory 2026-11-16: at the density it is shown at. #app is zoomed to ~0.3-0.5 there, so 2 px
+  // per layout px was 2-3x the screen's pixels each way - a ~20 MB canvas, downsampled by the compositor - where the
+  // screen's own density, capped at 2 like every canvas, draws the same picture in a quarter of it)
+  const fit = window.MOBILE && board.offsetWidth ? board.getBoundingClientRect().width / board.offsetWidth : 1;
+  const dpr = Math.min(2, (devicePixelRatio || 1) * (fit > 0 ? fit : 1));
   burstDpr = dpr;
   if (shardCanvas.width !== Math.round(w * dpr) || shardCanvas.height !== Math.round(h * dpr)) {
     shardCanvas.width = Math.round(w * dpr); shardCanvas.height = Math.round(h * dpr);
@@ -4745,7 +4816,8 @@ function burstKit(name, img, upTo = 3) {
       const x0 = Math.floor(Math.min(...xs)), y0 = Math.floor(Math.min(...ys));
       const cw = Math.max(1, Math.ceil(Math.max(...xs)) - x0), ch = Math.max(1, Math.ceil(Math.max(...ys)) - y0);
       const c = document.createElement("canvas"); c.width = cw; c.height = ch;
-      const g = c.getContext("2d", { willReadFrequently: true });
+      const g = gfxCtx(c, "2d", { willReadFrequently: true });
+      if (!g) continue;   // (the safety net) a piece fewer
       g.translate(-x0, -y0);
       g.beginPath(); poly.forEach(([x, y], q) => q ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
       g.save(); g.clip(); g.drawImage(img, 0, 0, w, h); g.restore();
@@ -4792,7 +4864,8 @@ function makeSmear(img) {
     const bw = ((c0 && c0.clientWidth) || 111) * .88, bh = ((c0 && c0.clientHeight) || 94) * .88;   // the icon box (measureRigBox)
     const W = Math.round(bw * SMEAR.res), CH = Math.round(bh * SMEAR.res), L = Math.round(CH * SMEAR.trail), H = CH + L;
     const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-    const g = cv.getContext("2d", { willReadFrequently: true });
+    const g = gfxCtx(cv, "2d", { willReadFrequently: true });
+    if (!g) { reject(new Error("no canvas for the motion blur")); return; }
     const s = Math.min(W / img.naturalWidth, CH / img.naturalHeight), w = img.naturalWidth * s, h = img.naturalHeight * s;
     g.drawImage(img, (W - w) / 2, L + (CH - h) / 2, w, h);   // the icon as the cell contains it, at the foot of the trail
     const a = g.getImageData(0, 0, W, H).data, out = g.createImageData(W, H), o = out.data;
@@ -4849,7 +4922,9 @@ const rgbOf = col => { const n = parseInt(col.slice(1), 16); return `${n >> 16},
 function glowSprite(col) {
   if (glowSprites[col]) return glowSprites[col];
   const S = 128, c = document.createElement("canvas"); c.width = c.height = S;
-  const g = c.getContext("2d"), rgb = rgbOf(col), gr = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  const g = gfxCtx(c);
+  if (!g) return (glowSprites[col] = c);   // (the safety net) drawn as nothing
+  const rgb = rgbOf(col), gr = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
   gr.addColorStop(0, "rgba(255, 255, 255, 1)"); gr.addColorStop(.12, "rgba(255, 255, 255, .8)");
   gr.addColorStop(.3, `rgba(${rgb}, .55)`); gr.addColorStop(.55, `rgba(${rgb}, .12)`); gr.addColorStop(1, `rgba(${rgb}, 0)`);
   g.fillStyle = gr; g.fillRect(0, 0, S, S);
@@ -4859,7 +4934,8 @@ function glowSprite(col) {
 function smokePuff() {
   if (smokeSprite) return smokeSprite;
   const S = 128, c = document.createElement("canvas"); c.width = c.height = S;
-  const g = c.getContext("2d");
+  const g = gfxCtx(c);
+  if (!g) return (smokeSprite = c);   // (the safety net) drawn as nothing
   for (let i = 0; i < 6; i++) {
     const a = i / 6 * Math.PI * 2 + Math.random() * .6, d = S * (.08 + Math.random() * .1), r = S * (.2 + Math.random() * .1);
     const x = S / 2 + Math.cos(a) * d, y = S / 2 + Math.sin(a) * d, gr = g.createRadialGradient(x, y, 0, x, y, r);
@@ -4898,7 +4974,8 @@ function hexKit(img) {
   if (!img || !img.naturalWidth) return null;
   const S = HEX_PX, ar = img.naturalHeight / img.naturalWidth, w = S, h = Math.round(S * ar);
   const base = document.createElement("canvas"); base.width = w; base.height = h;
-  const bx = base.getContext("2d", { willReadFrequently: true });
+  const bx = gfxCtx(base, "2d", { willReadFrequently: true });
+  if (!bx) return null;   // (the safety net) no dissolve: the tile simply goes
   bx.drawImage(img, 0, 0, w, h);
   const src = bx.getImageData(0, 0, w, h);
   // the burn: value noise on two scales, plus distance from the middle, so it eats in from the rim
@@ -4916,7 +4993,9 @@ function hexKit(img) {
   for (let k = 0; k < HEX_STEPS; k++) {
     const thr = k / (HEX_STEPS - 1) * 1.1, band = .07;
     const c = document.createElement("canvas"); c.width = w; c.height = h;
-    const cx = c.getContext("2d"), out = cx.createImageData(w, h), d = out.data, sd = src.data;
+    const cx = gfxCtx(c);
+    if (!cx) return null;
+    const out = cx.createImageData(w, h), d = out.data, sd = src.data;
     for (let i = 0; i < w * h; i++) {
       const n = noise[i], a = sd[i * 4 + 3];
       if (!a || n < thr) continue;
@@ -4931,7 +5010,8 @@ function hexKit(img) {
   }
   // the icon's ghost: its own silhouette washed in ectoplasm green, faintly showing its drawing through
   const ghost = document.createElement("canvas"); ghost.width = w; ghost.height = h;
-  const gx = ghost.getContext("2d");
+  const gx = gfxCtx(ghost);
+  if (!gx) return null;
   gx.drawImage(img, 0, 0, w, h);
   gx.globalCompositeOperation = "source-atop";
   gx.fillStyle = "rgba(150, 255, 130, .78)"; gx.fillRect(0, 0, w, h);
@@ -6255,6 +6335,23 @@ const MUSIC = {   // Voodoo on Bourbon: a Bourbon Street brass band (bucket drum
   total: { ogg: "assets/music_total.ogg", aac: "assets/music_total.aac", frames: 768032, head: 209014, headLen: 266614, aacStart: 5824, aacFrames: 1041408, bpm: 120.0, bars: 8, level: 0.376 },
 };
 const MUSIC_RATE = 48000;
+// The mobile tier's sound (iOS memory, 2026-11-16, after Tipsy Harvest's): every decoded sample is a 32-bit float at
+// the context's rate, so a phone's context runs at 32 kHz (the base loop 29 -> 19 MB, the effects two thirds) and at
+// most two clips decode at once (the first touch asked for every effect at the same instant). Loop points and beats
+// are kept in seconds (MUSIC_RATE is the files' rate, not the context's), so the loops and cue changes are unchanged.
+const AUDIO_RATE = window.MOBILE ? 32000 : 0;
+let audioDecoding = 0;
+const audioDecodeQ = [];
+const decodeAudio = b => {
+  if (!window.MOBILE) return actx.decodeAudioData(b);
+  return new Promise((ok, no) => {
+    const go = () => {
+      audioDecoding++;
+      actx.decodeAudioData(b).then(ok, no).finally(() => { audioDecoding--; const n = audioDecodeQ.shift(); if (n) n(); });
+    };
+    if (audioDecoding < 2) go(); else audioDecodeQ.push(go);
+  });
+};
 const OPUS_OK = (() => { try { return !!new Audio().canPlayType('audio/ogg; codecs="opus"'); } catch (e) { return false; } })();
 // the bytes come down with the page - the base game's first, the others once it is in; only the
 // decode waits for the context
@@ -6269,8 +6366,8 @@ function loadTrack(name) {
   if (musicTrack[name]) return musicTrack[name];
   const m = MUSIC[name];
   // (decodeAudioData empties the bytes it is handed: the cached copy is kept whole for the next decode)
-  const fromOgg = () => fetchMusic(name).then(b => actx.decodeAudioData(b.slice(0))).then(buf => ({ buf, at: 0 }));
-  const fromAac = () => (OPUS_OK ? fetch(m.aac).then(r => r.arrayBuffer()) : fetchMusic(name).then(b => b.slice(0))).then(b => actx.decodeAudioData(b))
+  const fromOgg = () => fetchMusic(name).then(b => decodeAudio(b.slice(0))).then(buf => ({ buf, at: 0 }));
+  const fromAac = () => (OPUS_OK ? fetch(m.aac).then(r => r.arrayBuffer()) : fetchMusic(name).then(b => b.slice(0))).then(b => decodeAudio(b))
     .then(buf => ({ buf, at: Math.max(0, (m.aacStart - Math.max(0, m.aacFrames - buf.duration * MUSIC_RATE)) / MUSIC_RATE) }));
   musicTrack[name] = (OPUS_OK ? fromOgg().catch(fromAac) : fromAac()).catch(() => null);   // silence, never a broken round
   return musicTrack[name];
@@ -6419,15 +6516,16 @@ function audio() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return null;
   if (!actx) {
-    actx = new Ctx();
+    if (AUDIO_RATE) try { actx = new Ctx({ sampleRate: AUDIO_RATE }); } catch (e) { actx = null; }   // (an old webkitAudioContext takes no options)
+    if (!actx) actx = new Ctx();
     // everything routes through one of two buses so the volume sliders (and mute) are a
     // single gain each rather than a change to every source
     sfxBus = actx.createGain(); sfxBus.connect(actx.destination);
     musicBus = actx.createGain(); musicBus.connect(actx.destination);
     applyVolumes();
     for (const name of Object.keys(SFX)) {
-      sfxDecoding[name] = sfxRaw[name].then(b => b && actx.decodeAudioData(b))
-        .catch(() => wavOf(SFX[name]).then(b => b && actx.decodeAudioData(b)))   // an Opus copy that will not decode: the WAV
+      sfxDecoding[name] = sfxRaw[name].then(b => b && decodeAudio(b))
+        .catch(() => wavOf(SFX[name]).then(b => b && decodeAudio(b)))   // an Opus copy that will not decode: the WAV
         .then(buf => { if (buf) sfxBuf[name] = buf; })
         .catch(() => {});   // a missing clip just means silence, never a broken round
     }
@@ -6985,8 +7083,8 @@ function lineSprites() {
   const make = (px, draw) => {
     const c = document.createElement("canvas");
     c.width = c.height = Math.round(px * S);
-    const g = c.getContext("2d");
-    g.scale(S, S); draw(g, px / 2);
+    const g = gfxCtx(c);
+    if (g) { g.scale(S, S); draw(g, px / 2); }
     return c;
   };
   const core = make(LINE_CORE + 3, (g, h) => {   // the solid paint, its edge softened
@@ -7033,8 +7131,8 @@ function wipeSheet(sh) {
   sh.raf = sh.tid = sh.land = 0;
   sh.el.classList.remove("on", "out");
   for (const b of sh.el.querySelectorAll("b")) b.remove();
-  const c = sh.paint, g = c.getContext("2d");
-  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
+  const c = sh.paint, g = gfxCtx(c);
+  if (g) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); }
 }
 function clearWinLine() {   // the line fades out with its cluster's moment
   for (const sh of lineSheets) {
@@ -7092,7 +7190,9 @@ function drawWinLine(positions) {
   // never dulls the stroke it runs under
   const cv = sh.paint;
   cv.width = Math.round(bw * k); cv.height = Math.round(bh * k);
-  const gp = cv.getContext("2d"); gp.setTransform(k, 0, 0, k, -bx * k, -by * k);
+  const gp = gfxCtx(cv);
+  if (!gp) return 0;   // (the safety net) no canvas for the line: the cluster still pays and pops
+  gp.setTransform(k, 0, 0, k, -bx * k, -by * k);
   sh.el.classList.add("on");
   // a few runs of paint, each where the stroke has just passed, on its way down the board
   const drips = [];
@@ -8188,8 +8288,9 @@ function footShadow(app, fig, root) {
   if (!rest || !rest.length || !root.parentNode) return;
   const cv = document.createElement("canvas");
   cv.className = "charshadow"; cv.setAttribute("aria-hidden", "true");
+  const ctx = gfxCtx(cv);
+  if (!ctx) return;
   root.parentNode.insertBefore(cv, root);   // under the figure, over the wall
-  const ctx = cv.getContext("2d");
   let map = null, placedAt = -1e9, drawnAt = 0, drawnOf = null, drawnMap = null;
   // where the stage sits on the page (read between hops) and the canvas round the figure's ground:
   // its width, a little above the ground and a little below
@@ -8814,11 +8915,14 @@ function iconSprites() {
       const w = img.naturalWidth * fit, h = img.naturalHeight * fit;
       const icon = document.createElement("canvas");
       icon.width = icon.height = S;
-      icon.getContext("2d").drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+      const ig = gfxCtx(icon);
+      if (!ig) return;   // (the safety net) this kind is left out of the shower
+      ig.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
       // the icon is drawn far off its canvas, so only the shadow it throws lands on it
       const shade = document.createElement("canvas");
       shade.width = shade.height = HALF + 2 * PAD;
-      const g = shade.getContext("2d");
+      const g = gfxCtx(shade);
+      if (!g) return;
       g.shadowColor = "rgba(0,0,0,.55)"; g.shadowBlur = BLUR; g.shadowOffsetX = 4096;
       g.drawImage(icon, PAD - 4096, PAD, HALF, HALF);
       kind.icon = icon; kind.shade = shade;
@@ -8922,7 +9026,8 @@ function startIntroIcons(canvas, avoid) {
   if (REDUCED_MOTION || !canvas) return;
   const kinds = iconSprites();
   if (!kinds.length) return;
-  const ctx = canvas.getContext("2d");
+  const ctx = gfxCtx(canvas);
+  if (!ctx) return;
   const SPIN_KICK = 0.25;   // how much of a glancing knock turns into spin
   const FLIP_KICK = 1.4;    // degrees/s of flip per px/s of a knock's normal speed
   const SETTLE = 0.8;       // per second: how quickly a knocked icon eases back to its own pace and spin
@@ -8932,7 +9037,8 @@ function startIntroIcons(canvas, avoid) {
     if (kind.back || !kind.icon) return kind.back;
     const c = document.createElement("canvas");
     c.width = c.height = ICON_SPRITE;
-    const g = c.getContext("2d");
+    const g = gfxCtx(c);
+    if (!g) return kind.icon;   // (the safety net) its back shows its face
     g.drawImage(kind.icon, 0, 0);
     g.globalCompositeOperation = "source-atop";   // only where the art is
     g.fillStyle = "rgba(14, 10, 22, .58)";
@@ -9138,9 +9244,9 @@ function runIntro() {
     const grain = wrap.querySelector(".intrograin");
     if (grain) {
       const c = document.createElement("canvas"); c.width = c.height = 160;
-      const g = c.getContext("2d"), px = g.createImageData(160, 160);
-      for (let i = 0; i < px.data.length; i += 4) { const v = Math.random() * 255; px.data[i] = px.data[i + 1] = px.data[i + 2] = v; px.data[i + 3] = 255; }
-      g.putImageData(px, 0, 0);
+      const g = gfxCtx(c), px = g && g.createImageData(160, 160);
+      if (px) for (let i = 0; i < px.data.length; i += 4) { const v = Math.random() * 255; px.data[i] = px.data[i + 1] = px.data[i + 2] = v; px.data[i + 3] = 255; }
+      if (px) g.putImageData(px, 0, 0);
       grain.style.backgroundImage = `url(${c.toDataURL()})`;
     }
     // audio, tried now; its five clips and the wordmark, waited on for a moment
@@ -9424,9 +9530,10 @@ function startIconRain(host) {
   if (REDUCED_MOTION) return () => {};
   const kinds = iconSprites();
   const layer = document.createElement("canvas");
+  const ctx = gfxCtx(layer);
+  if (!ctx) return () => {};   // (the safety net) no shower
   layer.className = "iconrain";
   host.prepend(layer);   // behind the figure and the lettering
-  const ctx = layer.getContext("2d");
   const GRAVITY = 1250;               // px/s^2
   const DRAG_X = 0.5, DRAG_Y = 1.1;   // per second, for a middling icon; it tops out near 1000px/s
   const BOUNCE = 0.62;                // how much of a head-on hit comes back
@@ -9830,7 +9937,7 @@ function runFeatures() {
   wrap.setAttribute("aria-label", T("How the game works"));
   const box = (icon, title, text) => `<div class="fbox"><div class="fin"><div class="ficon">${icon}</div><h3>${title}</h3><p>${text}</p></div></div>`;
   wrap.innerHTML =
-    `<img class="ftitle" src="assets/title_logo.webp" alt="${T("Voodoo on Bourbon")}" draggable="false">` +
+    `<img class="ftitle" src="${mobArt("assets/title_logo.webp")}" alt="${T("Voodoo on Bourbon")}" draggable="false">` +
     `<div class="fboxes">` +
       box(`<img src="${SYM.M.img}" alt="${T("Multi")}" draggable="false"><div class="fmult" id="featMult" aria-label="x${fmtMult(FEATURE_VALUES[0])}">${[..."x" + fmtMult(FEATURE_VALUES[0])].map(ch => `<i class="vg g-${VGLYPH[ch] || ch}"></i>`).join("")}</div>`,
         T("Multi"),

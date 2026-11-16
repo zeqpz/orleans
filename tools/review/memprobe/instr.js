@@ -23,7 +23,7 @@
   const cib = window.createImageBitmap;
   window.createImageBitmap = function (...a) {
     const st = (new Error().stack || "").split("\n").slice(2, 3).join("").trim().slice(0, 160);
-    return cib.apply(this, a).then(b => { b.__st = st; track(M.bitmaps, b); return b; });
+    return cib.apply(this, a).then(b => { b.__st = st; b.__mt = 1; track(M.bitmaps, b); return b; });
   };
   const dad = BaseAudioContext.prototype.decodeAudioData;
   BaseAudioContext.prototype.decodeAudioData = function (buf, ...rest) {
@@ -57,6 +57,10 @@
       if (tex && tex.__lv) {
         let w, h, fmt, type;
         if (a.length >= 9) { w = a[3]; h = a[4]; fmt = a[6]; type = a[7]; } else { w = srcW(a[5]); h = srcH(a[5]); fmt = a[3]; type = a[4]; }
+        // a texture's source kept by the page after its upload (Pixi holds it for a re-upload): an ImageBitmap made in a
+        // worker never passed window.createImageBitmap, so it is counted here (closed bitmaps read 0 x 0)
+        const src = a.length >= 9 ? a[8] : a[5];
+        if (window.ImageBitmap && src instanceof ImageBitmap && !src.__mt) { src.__mt = 1; src.__st = "texture source"; track(M.bitmaps, src); }
         tex.__lv[a[0] + ":" + a[1]] = w * h * BPP(fmt, type, this);
         tex.__wh = w + "x" + h;
       }
@@ -115,20 +119,23 @@
   M.pics = () => {
     const urls = new Map();
     const add = (u, where) => { try { u = new URL(u, location.href).pathname.replace(/^\//, ""); } catch (e) { return; } const o = urls.get(u); if (!o || (/^(held|css-hidden)/.test(o) && !/^(held|css-hidden)/.test(where))) urls.set(u, where); };
-    for (const r of M.imgs) { const i = r.deref(); if (i && i.currentSrc && !i.currentSrc.startsWith("data:") && !i.currentSrc.startsWith("blob:")) add(i.currentSrc, i.isConnected ? "img" : "held"); }
+    // (2026-11-16: an <img> or a CSS picture on an element with no box - display: none on it or on an ancestor - is
+    // neither painted nor decoded, so it counts as hidden; the model used to read the element's own display only)
+    for (const r of M.imgs) { const i = r.deref(); if (i && !i.isConnected && i.currentSrc && !i.currentSrc.startsWith("data:") && !i.currentSrc.startsWith("blob:")) add(i.currentSrc, "held"); }
     for (const i of document.querySelectorAll("img")) if (i.currentSrc && !i.currentSrc.startsWith("data:") && !i.currentSrc.startsWith("blob:")) {
-      const vis = i.getClientRects().length > 0 && getComputedStyle(i).visibility !== "hidden";
+      const vis = i.getClientRects().length > 0 && getComputedStyle(i).visibility !== "hidden" && getComputedStyle(i).display !== "none";
       add(i.currentSrc, (vis ? "img:" : "css-hidden:img:") + (i.id || i.className || "").toString().slice(0, 30));
     }
     const els = document.querySelectorAll("*");
     for (const el of els) {
+      const boxed = el.getClientRects().length > 0;
       for (const pseudo of [null, "::before", "::after"]) {
         const cs = getComputedStyle(el, pseudo);
         if (pseudo && cs.content === "none") continue;
         for (const prop of ["backgroundImage", "maskImage", "webkitMaskImage", "borderImageSource", "listStyleImage"]) {
           const v = cs[prop];
           if (!v || v === "none" || v.indexOf("url(") < 0) continue;
-          for (const m of v.matchAll(/url\("?([^")]+)"?\)/g)) if (!m[1].startsWith("data:")) add(m[1], (cs.display === "none" ? "css-hidden:" : "css:") + (el.id || el.className || el.tagName).toString().slice(0, 30));
+          for (const m of v.matchAll(/url\("?([^")]+)"?\)/g)) if (!m[1].startsWith("data:")) add(m[1], (cs.display === "none" || !boxed ? "css-hidden:" : "css:") + (el.id || el.className || el.tagName).toString().slice(0, 30));
         }
       }
     }

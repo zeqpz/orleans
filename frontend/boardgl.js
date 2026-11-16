@@ -25,6 +25,15 @@
   // stays hidden in the iron as the frame drifts (owner, 2026-11-09). layout() measures it per reel and hands it to
   // the clip-paths in index.html as --reel-floor (px below the reel).
   const FRAME_RAIL = 1789 / 1982;
+  // The mobile tier lets go of each atlas's decoded copy once it is on the GPU (iOS memory, 2026-11-16). Pixi keeps the
+  // ImageBitmap it uploaded from, to upload it again after its texture GC or a lost context: on a phone that was a
+  // second copy of every clip, ~144 MB of decoded pixels in the page's process beside the textures themselves. So
+  // there the bitmap is closed after the upload, the texture is kept out of Pixi's GC (it would have nothing to upload
+  // again from), and a lost context rebuilds every atlas from its sheet before the board draws again. The pixels on
+  // the GPU are the very same. ?keepsrc=1 keeps the copies (QA).
+  const RELEASE = !!window.MOBILE && !/[?&]keepsrc=1\b/.test(location.search);
+  const released = [];   // { source, url, size } of every atlas whose bitmap was let go
+  let lost = false, rebuilding = null;
 
   let app = null, board = null, root = null, tried = null;
   let dirty = true, geoDirty = true, res = 1, W = 0, H = 0;
@@ -49,6 +58,10 @@
         await app.init({ backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: resolution(), width: 4, height: 4, preference: "webgl" });
       } catch (e) { console.warn("board canvas unavailable:", e.message); app = null; return false; }
       app.ticker.remove(app.render, app);
+      // a lost context (a GPU reset, or WebKit out of memory) is the safety net's business (GFX.low in index.html);
+      // here the board holds its drawing until its atlases are back on the GPU
+      app.canvas.addEventListener("webglcontextlost", () => { lost = true; }, false);
+      app.canvas.addEventListener("webglcontextrestored", () => { rebuild().then(() => { lost = false; dirty = true; geoDirty = true; }); }, false);
       app.canvas.className = "boardgl";
       app.canvas.setAttribute("aria-hidden", "true");
       const ml = document.getElementById("multLayer");
@@ -141,11 +154,42 @@
       }
       const base = PIXI.Texture.from(bmp);
       base.source.scaleMode = "linear";
-      try { app.renderer.texture.initSource(base.source); } catch (e) { /* uploaded on first draw instead */ }
+      let up = false;
+      try { app.renderer.texture.initSource(base.source); up = !lost; } catch (e) { /* uploaded on first draw instead */ }
+      if (RELEASE && up && typeof bmp.close === "function") {   // (mobile) on the GPU now: the decoded copy goes
+        base.source.autoGarbageCollect = false;
+        released.push({ source: base.source, url, size });
+        bmp.close();
+      }
       const frames = [];
       for (let f = 0; f < n; f++) frames.push(new PIXI.Texture({ source: base.source, frame: new PIXI.Rectangle((f % cols) * fw, Math.floor(f / cols) * fh, fw, fh) }));
       return { frames, fw, fh, k };
     } finally { free(); }
+  }
+
+  // the context came back empty: every released atlas is cut from its sheet again (the same fetch and resize, so the
+  // same pixels), uploaded and let go again; the board draws once they are all back
+  function rebuild() {
+    if (rebuilding) return rebuilding;
+    rebuilding = (async () => {
+      for (const r of released) {
+        await slot();
+        try {
+          let bmp;
+          if (sheetWorker) bmp = await sheetWorker(Object.assign({ url: new URL(r.url, location.href).href }, r.size));
+          else {
+            const sheet = await createImageBitmap(await fetch(r.url).then(x => x.blob()));
+            bmp = sheet;
+            if (r.size.rw) { bmp = await createImageBitmap(sheet, 0, 0, r.size.sw, r.size.sh, { resizeWidth: r.size.rw, resizeHeight: r.size.rh, resizeQuality: "high" }); sheet.close(); }
+          }
+          r.source.resource = bmp;
+          try { app.renderer.texture.initSource(r.source); } catch (e) { /* drawn blank until the next try */ }
+          bmp.close();
+        } catch (e) { console.warn("board atlas rebuild:", r.url, e && e.message); }
+        finally { free(); }
+      }
+    })().finally(() => { rebuilding = null; });
+    return rebuilding;
   }
 
   function smearTexture(cell) {
@@ -527,10 +571,10 @@
   function afterLayout() {
     if (!postDue) return;
     postDue = false; postMissed = 0;
-    if (!document.hidden && board) draw();
+    if (!document.hidden && board && !lost) draw();
   }
   function tick() {
-    if (document.hidden || !board) return;
+    if (document.hidden || !board || lost) return;
     const missed = postDue;
     postDue = false;
     if (missed && ++postMissed > 3) probe = null;   // no callbacks here: always draw in the animation frame

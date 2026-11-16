@@ -95,6 +95,10 @@ with sync_playwright() as pw:
         time.sleep(3)
         idle = samples[-1] if samples else {}
         t0[0] = time.time(); samples.clear()
+        # a bonus's intro and TOTAL WIN wait for a press: given one once they have been up ~3 s
+        pg.evaluate("""() => { clearInterval(window.__clk); const seen = {};
+          window.__clk = setInterval(() => { for (const s of ['.bonusintro', '.totalwin']) { const e = document.querySelector(s);
+            if (e && e.getBoundingClientRect().width > 0) { seen[s] = (seen[s] || 0) + 1; if (seen[s] > 8) { e.click(); seen[s] = 0; } } } }, 400); }""")
         pg.click("#replayPlay")
         cpeak = {"n": 0, "mb": 0}; took = False; done = False; c = {}
         while time.time() - t0[0] < 300 and not crashed:

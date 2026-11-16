@@ -24,7 +24,7 @@ Scenarios:
   --mode M --event N   replay mode: load, START REPLAY, the round to PLAY AGAIN (peak of the whole run, and at the
                   moments a cork is in the air or a tile is blowing: "corkpop")
 usage: iosprobe3.py OUTJSON (--boot | --mode corkstorm --event 43029) [--base URL] [--w 390 --h 844 --dpr 3]
-                    [--ua ios|crios] [--throttle 1] [--extra "&x=1"] [--shots DIR/prefix]
+                    [--ua ios|crios] [--throttle 1] [--extra "&x=1"] [--shots DIR/prefix] [--screenh 844]
 """
 import json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +49,8 @@ CENSUS = """JSON.stringify((() => {
   let cork = 0, pops = 0;
   try { cork = FXS.parts.filter(p => p.kind === 'cork').length; } catch (e) {}
   try { cork += corkLive.size; } catch (e) {}   // the mobile tier's cork: one picture in the air
-  pops += document.querySelectorAll('.cell.popping, .cell.explode').length;   // tiles blowing (their own clip, or the scale-and-fade)
+  pops += document.querySelectorAll('.cell.popping, .cell.explode').length;
+  try { pops += bursts.length; } catch (e) {}   // (Voodoo on Bourbon: a tile is hexed away on the burst canvas)   // tiles blowing (their own clip, or the scale-and-fade)
   let swf = 0, swn = 0;
   for (const el of document.querySelectorAll('body *')) {
     const f = getComputedStyle(el).filter;
@@ -99,7 +100,10 @@ CENSUS = """JSON.stringify((() => {
 })())"""
 
 b = Browser(w, h, dpr, ua=ua, mobile=True)
-res = {"profile": f"{w}x{h}@{dpr} {opt('--ua', 'ios')} x{thr}", "base": base, "scenario": "boot" if boot else f"{mode}/{event}", "samples": []}
+screenh = int(opt("--screenh", 0))   # Safari's bars: a window shorter than the screen (e.g. --h 664 --screenh 844)
+if screenh:
+    b.ws.call("Emulation.setDeviceMetricsOverride", width=w, height=h, deviceScaleFactor=dpr, mobile=True, screenWidth=w, screenHeight=screenh)
+res = {"profile": f"{w}x{h}@{dpr}{' screen ' + str(screenh) if screenh else ''} {opt('--ua', 'ios')} x{thr}", "base": base, "scenario": "boot" if boot else f"{mode}/{event}", "samples": []}
 pics_last = [0.0, 0.0, []]
 nsamp = [0]
 
@@ -178,6 +182,10 @@ try:
             time.sleep(.5); sample("ready")
         if thr > 1:
             b.ws.call("Emulation.setCPUThrottlingRate", rate=thr)
+        # a bonus's intro and its TOTAL WIN wait for a press: given one after they have been up ~3 s (lag.py's clicker)
+        b.js("""(() => { clearInterval(window.__clk); const seen = {};
+          window.__clk = setInterval(() => { for (const s of ['.bonusintro', '.totalwin']) { const e = document.querySelector(s);
+            if (e && e.getBoundingClientRect().width > 0) { seen[s] = (seen[s] || 0) + 1; if (seen[s] > 8) { e.click(); seen[s] = 0; } } } }, 400); })()""")
         b.js("document.getElementById('replayPlay').click(); 1")
         took = set()
         t1 = time.time()

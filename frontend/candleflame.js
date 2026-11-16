@@ -13,10 +13,11 @@
   const board = document.getElementById("board");
   if (!board) return;
   const cv = document.createElement("canvas");
+  const ctx = window.gfxCtx ? gfxCtx(cv) : cv.getContext("2d");
+  if (!ctx) return;   // (the safety net: a refused canvas) no live flame
   cv.id = "candleflame";
   cv.setAttribute("aria-hidden", "true");
   board.appendChild(cv);
-  const ctx = cv.getContext("2d");
   const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let seed = 4471;
   const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;

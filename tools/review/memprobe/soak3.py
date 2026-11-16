@@ -20,8 +20,10 @@ N = int(opt("--rounds", 150))
 thr = float(opt("--throttle", 1))
 ua = CRIOS_UA if opt("--ua", "ios") == "crios" else IPHONE_UA
 w, h = int(opt("--w", 390)), int(opt("--h", 844))
-BIG = [("base", 117426), ("corkstorm", 43029), ("base", 95017), ("base", 25750), ("corkstorm", 82647), ("base", 48006),
-       ("corkstorm", 2), ("base", 107153), ("base", 844)]
+# Voodoo on Bourbon's heaviest books (2026-11-16): the longest base tumble chains (904536, 348081, 199562: 8 tumbles,
+# 3-4 Multis), the most Multis (501364), a base max win (820309), the big-win replay (94), 844, and one with a bonus (8)
+BIG = [("base", 904536), ("base", 820309), ("base", 348081), ("base", 94), ("base", 501364), ("base", 844),
+       ("base", 199562), ("base", 8)]
 ROUND = """(async (skip) => {
   const t0 = performance.now();
   const skipper = setInterval(() => { if (skip && !state.noSkip) state.skip = true;
