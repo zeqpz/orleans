@@ -5,6 +5,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Voodoo on Bourbon</title>
+<script>
+// The MOBILE tier (owner, 2026-11-16: "the mobile version is very laggy ... on the iPhone, Apple WebKit"). Every phone
+// and tablet: WebKit on iOS (Safari, CriOS, FxiOS, EdgiOS, iPadOS asking for the desktop site) and touch Android /
+// small touch screens. There the game is built light, after Tipsy Harvest's iOS reviews (zeqpz/fallslotsga 9c3ac82):
+// no Doc (no rig, atlas, canvas or sounds), no living street (bgscene.js) and no candle flame - one still painting
+// fitted to the phone instead (assets/mobile/: an upright one, and the lit 16:9 one for a phone on its side) - no
+// idle wanders, filters, backdrop blurs or blend modes, and #app is ZOOMED to fit instead of transform-scaled
+// (WebKit backs a layer at its layout size x DPR^2 and never scales it down for a scaled ancestor). Desktop is
+// unchanged. ?mobile=1 / ?mobile=0 force it either way (QA).
+window.MOBILE = (() => {
+  const q = new URLSearchParams(location.search).get("mobile");
+  if (q === "1" || q === "0") return q === "1";
+  const ua = navigator.userAgent || "", touch = (navigator.maxTouchPoints || 0) > 1;
+  const ios = /iP(hone|od|ad)|CriOS|FxiOS|EdgiOS/.test(ua) || (/Macintosh/.test(ua) && touch) || (navigator.platform === "MacIntel" && touch);
+  const small = Math.min(screen.width || 9999, screen.height || 9999) <= 820;
+  return ios || (touch && (/Android|Mobi|Tablet|Silk|Kindle/i.test(ua) || small));
+})();
+document.documentElement.classList.toggle("mob", window.MOBILE);
+</script>
 <style>
   :root {
     --bg: #141218;
@@ -3340,6 +3359,32 @@
   /* the 5x5 board (2026-11-09): cells 164 x 140 (were 115 x 98), so the Multi numerals grow with them (x1.43) */
   .multlayer .gmult { font-size: calc(60px * var(--shrink, 1)); }
   .cell.booster .multface .mv { font-size: 43px; }
+
+  /* ---- the MOBILE tier (2026-11-16; window.MOBILE, html.mob) ----
+     One still painting fitted to the phone - assets/mobile/bg_portrait.webp upright (a 2:3 Bourbon Street made for
+     an upright screen: sky and moon above the board, cobbles under the bar), the lit 16:9 one on its side - in place
+     of the living street, the second full-size painting under it and Doc. bonus_wall.webp (3840 x 2160, 33 MB
+     decoded) is never fetched here. The scenery is absolute, not fixed (WebKit composites a fixed element as a layer
+     of its own; the page never scrolls, so it is the same place), with no lean. No CSS filter, backdrop blur or
+     blend mode anywhere (each an offscreen buffer), and the loading screen's grain is gone (a moving layer bigger
+     than the screen). */
+  html.zfit #app { contain: layout; }
+  html.mob .camlayer { position: absolute; }
+  html.mob #bgwall {
+    position: absolute; inset: 0; transform: none;
+    background: #0d0b1c url("assets/mobile/bg_landscape.webp") center / cover no-repeat;
+  }
+  html.mob #bgscene, html.mob #candleflame, html.mob #camnear, html.mob #charfx, html.mob .charshadow { display: none !important; }
+  @media (orientation: portrait) {
+    html.mob #bgwall { background: #0d0b1c url("assets/mobile/bg_portrait.webp") 50% 40% / cover no-repeat; }
+  }
+  html.mob .bonusintro .wall { background: #1a1230 url("assets/mobile/bg_portrait.webp") center / cover no-repeat; }
+  @media (orientation: landscape) { html.mob .bonusintro .wall { background-image: url("assets/mobile/bg_landscape.webp"); } }
+  html.mob *, html.mob *::before, html.mob *::after { filter: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; mix-blend-mode: normal !important; }
+  html.mob .intro .intrograin { display: none !important; }
+  html.mob .infowrap { background: rgba(8, 6, 10, .82); }
+  html.mob .rpwrap { background: rgba(6, 8, 18, .6); }
+  html.mob .rpwrap.done { background: rgba(6, 8, 18, .35); }
 </style>
 </head>
 <body>
@@ -3515,11 +3560,9 @@
 <script src="strips.js"></script>
 <script src="rgs.js"></script>
 <script src="rules.js"></script>
-<script src="sprayrim.js"></script>
-<script src="bgscene.js"></script>
-<script src="candleflame.js"></script>
+<script>if (!window.MOBILE) document.write('<script src="sprayrim.js"><\/script><script src="bgscene.js"><\/script><script src="candleflame.js"><\/script>');</script>
 <script src="boardgl.js"></script>
-<script src="charrig.js"></script>
+<script>if (!window.MOBILE) document.write('<script src="charrig.js"><\/script>');</script>
 <script>
 "use strict";
 
@@ -3684,7 +3727,7 @@ function buildBoard() {
 // symbols' own idles are Blender's now, the values keep this one): a slow random wander in width,
 // height and lean that never repeats, played by the compositor (wander, below).
 function multIdle() {
-  if (REDUCED_MOTION) return;
+  if (REDUCED_MOTION || window.MOBILE) return;   // (the mobile tier: 25 always-running animations saved)
   const AMP = [.07, .07, 2.5];   // up to 7% wider or narrower, 7% taller or shorter, 2.5 degrees of lean
   for (let r = 0; r < REELS; r++) for (let y = 0; y < ROWS; y++) {
     // each channel is a slow wander with a quicker, smaller one laid over it, so the motion
@@ -3784,7 +3827,7 @@ function startRims() {
 }
 function frameIdle() {
   const frame = $("paintframe");
-  if (REDUCED_MOTION || !frame) return;
+  if (REDUCED_MOTION || !frame || window.MOBILE) return;   // (the mobile tier: the frame holds still)
   const dx = drift(2.5, 4.5), dy = drift(2.5, 4.5), dr = drift(3, 5), dsx = drift(2.5, 4.5), dsy = drift(2.5, 4.5);
   wander(() => [frame, $("paintback"), $("candleflame"), document.querySelector("#board .sprayrim")].filter(Boolean), t => ({   // the velvet backing drifts with its frame
     transform: `translate(${(5 * dx(t)).toFixed(2)}px, ${(5 * dy(t)).toFixed(2)}px) rotate(${(.35 * dr(t)).toFixed(3)}deg) scale(${(1 + .004 * dsx(t)).toFixed(4)}, ${(1 + .004 * dsy(t)).toFixed(4)})`,
@@ -3915,7 +3958,7 @@ const SYMF = { man: null, density: "d16", sheets: new Map(), k: 1 };   // sheets
 // give the board), and kept. The rest (the hit, the Multi) still play straight off their sheets: only a
 // few of those are ever playing at once, which the browser keeps decoded happily.
 const SYM_HOLD = ["land", "idle"];
-const SYM_HOLD_HEADROOM = 1.1;
+const SYM_HOLD_HEADROOM = window.MOBILE ? 1 : 1.1;   // (the mobile tier: frames at exactly the size the phone shows them)
 const CLIP_OF = { drop: "land", win: "hit" };   // the board's own names for the moments, and the clips that play
 let symReady = null;
 // sheet px per rig unit the biggest symbol needs at rest on this screen, times the headroom -> the density to load
@@ -3952,7 +3995,7 @@ function symSheet(id, clip) {
   if (!s && BoardGL.on) {
     // drawn by the board canvas: every clip is an atlas at the size the screen shows it (the hit and the
     // Multi with the headroom of their pop)
-    const url = `assets/sym/${SYMF.density}/${key}.webp`, k = SYM_HOLD.includes(clip) ? SYMF.k : Math.min(1, SYMF.k * SYM_HEADROOM / SYM_HOLD_HEADROOM);
+    const url = `assets/sym/${SYMF.density}/${key}.webp`, k = SYM_HOLD.includes(clip) || window.MOBILE ? SYMF.k : Math.min(1, SYMF.k * SYM_HEADROOM / SYM_HOLD_HEADROOM);   // (mobile: no pop headroom - the hit and the Multi at the resting size)
     s = { ok: false, ready: null, atlas: null };
     s.ready = BoardGL.atlas(id, clip, url, k).then(a => { s.atlas = a; s.ok = true; }, e => { SYMF.sheets.delete(key); throw e; });
     SYMF.sheets.set(key, s);
@@ -4809,7 +4852,8 @@ function burstMeasure(r, y, sym) {
 // ragged voodoo-green line (a dissolve cut once from a noise field, HEX_STEPS frames, hexKit), its spirit - a
 // faint green ghost of the voodoo skull - rises out of it, green smoke curls up on a spiral and motes of
 // green and violet drift away. Same canvas and clock as the bursts, so it costs a few drawImage calls a frame.
-const HEX_STEPS = 16, HEX_PX = 220, HEX_MS = 900;
+// (the mobile tier cuts the kit at the size a phone shows the icon, ~110 device px, in 12 steps: 289 canvases / 56 MB -> 14 MB)
+const HEX_STEPS = window.MOBILE ? 12 : 16, HEX_PX = window.MOBILE ? 132 : 220, HEX_MS = 900;
 const hexKits = new Map();   // one dissolve (and green ghost) per symbol picture, cut on first use or while idle
 function hexKit(img) {
   if (img && hexKits.has(img.src)) return hexKits.get(img.src);
@@ -8462,6 +8506,7 @@ async function makeCharacter({ el, name, flavour, swap = {}, shadow = true }) {
 // the loading screen waits for both characters (their walk-on and idle decoded)
 let charsLoaded = Promise.resolve([]);
 (async function characters() {
+  if (window.MOBILE) { for (const id of ["charfx", "camnear"]) { const el = $(id); if (el) el.remove(); } return; }   // the mobile tier: no Doc
   charsLoaded = Promise.all(CHARACTERS.map(makeCharacter));
   const rigs = (await charsLoaded).filter(Boolean);
   if (!rigs.length) return;
@@ -8483,6 +8528,41 @@ let charsLoaded = Promise.resolve([]);
 // content down to whatever the window is. Measured at --fit:1 each time so the factor is
 // derived from the natural size, never compounded on the previous scale.
 let fitBusy = false;
+// The mobile tier ZOOMS #app to fit instead of scaling it with a transform. WebKit backs every composited layer at
+// its LAYOUT size x DPR^2 and never scales that down for a transform-scaled ancestor: under scale(.38) on a portrait
+// iPhone each layer inside #app cost ~7x the pixels it showed. With CSS zoom the layout itself is that size, so a
+// layer costs what it shows. Same picture: lengths (px, vh) zoom like the transform scaled them, a fixed child still
+// hangs off #app (contain: layout, html.zfit), and rects read in screen px either way. Checked once at the first fit:
+// an engine whose rects come back in the element's own unzoomed px (older WebKit) gets them scaled back (zoomRects);
+// one that does not zoom viewport units, or has no zoom at all, keeps the transform. ?zoomfit=0 forces the transform.
+let zoomFit = null;
+function zoomFitOk(app) {
+  if (zoomFit !== null) return zoomFit;
+  zoomFit = false;
+  if (!window.MOBILE || /[?&]zoomfit=0\b/.test(location.search) || !(window.CSS && CSS.supports && CSS.supports("zoom", "0.5"))) return false;
+  const host = document.createElement("div"), a = document.createElement("i"), ref = document.createElement("i");
+  host.style.cssText = "position:fixed;left:0;top:0;width:400px;height:400px;zoom:.5;contain:layout;visibility:hidden;pointer-events:none";
+  a.style.cssText = ref.style.cssText = "position:absolute;display:block;left:40px;top:0;width:100px;height:10vh";
+  ref.style.zoom = 2;   // (back to 1 inside the host: the unzoomed reference for 10vh)
+  host.append(a, ref); document.body.append(host);
+  const r = a.getBoundingClientRect(), q = ref.getBoundingClientRect();
+  host.remove();
+  const zoomedRects = Math.abs(r.width - 50) < 3, unzoomedRects = Math.abs(r.width - 100) < 3;
+  const vhZoomed = r.width > 0 && q.width > 0 && Math.abs((r.height / r.width) / (q.height / q.width) - 1) < .06;
+  if (!(zoomedRects || unzoomedRects) || !vhZoomed) return false;
+  if (unzoomedRects) zoomRects(app);
+  zoomFit = true;
+  document.documentElement.classList.add("zfit");
+  return true;
+}
+// rects of #app's pieces back on screen px, for an engine that reports them in the element's own zoomed-out px
+function zoomRects(app) {
+  const z = () => parseFloat(app.style.zoom) || 1, P = Element.prototype, gb = P.getBoundingClientRect, gr = P.getClientRects;
+  const k = el => (el === app || app.contains(el)) ? z() : 1;
+  const sc = (r, f) => new DOMRect(r.x * f, r.y * f, r.width * f, r.height * f);
+  P.getBoundingClientRect = function () { const r = gb.call(this), f = k(this); return f === 1 ? r : sc(r, f); };
+  P.getClientRects = function () { const l = gr.call(this), f = k(this); return f === 1 ? l : Array.from(l, r => sc(r, f)); };
+}
 function fitToScreen() {
   placeMultLayer();   // the slots follow the cells whenever the layout moves
   const app = $("app"), stage = document.querySelector(".stage");
@@ -8504,8 +8584,10 @@ function fitToScreen() {
     // page out wide enough for it, then see how tall that comes out and fit that too. The
     // final width is never narrower than the first pass, so nothing wraps back taller.
     const root = document.documentElement.style;
+    const zf = zoomFitOk(app);
     const measure = () => {
       app.style.transform = "none"; app.style.width = "auto"; app.style.height = "auto";
+      if (zf) app.style.zoom = "";
       const needW = stage.offsetWidth + 40;                   // .main's side padding
       const fitW = Math.min(1, W / needW);
       app.style.width = (W / fitW) + "px";
@@ -8537,7 +8619,8 @@ function fitToScreen() {
     }
     app.style.width = (W / fit) + "px";
     app.style.height = (H / fit) + "px";
-    app.style.transform = `scale(${fit.toFixed(4)})`;
+    if (zf) app.style.zoom = fit.toFixed(4);   // the mobile tier: laid out at the size it shows (above)
+    else app.style.transform = `scale(${fit.toFixed(4)})`;
     document.documentElement.style.setProperty("--fit", fit.toFixed(4));
     placeScenery();   // the characters and the tag take their places from where the board landed
   } finally {
@@ -8746,6 +8829,10 @@ function assetUrls() {
   }
   // art the voodoo build never shows, though the base build's rules still name it: not fetched, not held
   if (VOODOO) for (const u of [...urls]) if (UNSHOWN_ART.test(u)) urls.delete(u);
+  // each tier fetches only its own backgrounds: a phone never the 4K plate, the living street's layers or Doc's art;
+  // a desktop never the phone paintings (the mobile tier, 2026-11-16)
+  const OTHER_TIER = window.MOBILE ? /assets\/(bonus_wall\.webp|bg\/|chars\/)/ : /assets\/mobile\//;
+  for (const u of [...urls]) if (OTHER_TIER.test(u)) urls.delete(u);
   for (const def of Object.values(SYM)) if (def.img) urls.add(def.img);
   for (const n of ["0","1","2","3","4","5","6","7","8","9","dot","comma"]) urls.add("assets/num/" + n + ".webp");
   // the win screen's lettering, named rather than read off WIN_TIERS: that list is declared
@@ -10255,6 +10342,34 @@ document.addEventListener("visibilitychange", async () => {
   close.addEventListener("click", () => show(false));
   wrap.addEventListener("click", e => { if (e.target === wrap) show(false); });   // click-away
   document.addEventListener("keydown", e => { if (e.key === "Escape") show(false); });
+})();
+
+/* ---------- ?perf=1: the frame-time readout (the mobile tier, 2026-11-16; from zeqpz/fallslotsga) ---------- */
+// The one measure an iPhone gives without a Mac: frame times (rAF intervals) over the last 900 frames - p50 / p95 / p99 -
+// the frames over 20 ms in the current (or last) round, the canvases in the page and their pixels, and the tier
+// (mobile / zoom-fit / lite). Off unless the URL asks for it; nothing of it exists otherwise.
+if (/[?&]perf=1\b/.test(location.search)) (() => {
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;left:4px;top:4px;z-index:99;padding:3px 6px;font:11px/1.3 ui-monospace,Consolas,monospace;color:#fff;background:rgba(0,0,0,.72);border-radius:4px;pointer-events:none;white-space:pre";
+  document.body.append(box);
+  const N = 900, ring = new Float32Array(N);
+  let n = 0, last = 0, slow = 0, wasPlaying = false, shown = 0;
+  const tier = [window.MOBILE && "mobile", document.documentElement.classList.contains("zfit") && "zoom", ].filter(Boolean).join(" ") || "desktop";
+  const frame = t => {
+    if (last) { const d = t - last; ring[n++ % N] = d; if (d > 20 && state.playing) slow++; }
+    last = t;
+    if (state.playing && !wasPlaying) slow = 0;
+    wasPlaying = state.playing;
+    if (t - shown > 500) {
+      shown = t;
+      const k = Math.min(n, N), a = Array.from(ring.subarray(0, k)).sort((x, y) => x - y);
+      const q = p => k ? a[Math.min(k - 1, Math.floor(p * k))].toFixed(1) : "-";
+      let px = 0, c = 0; for (const cv of document.querySelectorAll("canvas")) { px += cv.width * cv.height; c++; }
+      box.textContent = `${tier}  ${innerWidth}x${innerHeight}@${devicePixelRatio}\nframe ms p50 ${q(.5)}  p95 ${q(.95)}  p99 ${q(.99)}\n>20 ms this round: ${slow}\ncanvases ${c}  ${(px * 4 / 1e6).toFixed(1)} MB`;
+    }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 })();
 
 /* ---------- boot ---------- */

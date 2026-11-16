@@ -8,6 +8,8 @@ import argparse, base64, json, os, sys, time, urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 KEY_FILE = os.path.join(os.path.expanduser("~"), "Documents", "gamdevkey.txt")
+if not os.path.exists(KEY_FILE):   # the other machines' place for it (the docstring's)
+    KEY_FILE = os.path.join(os.path.expanduser("~"), ".fallslots", "openrouter-key.txt")
 LOG = os.path.join(ROOT, "art", "nola-src", "log.jsonl")
 
 
