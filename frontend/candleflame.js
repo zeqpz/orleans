@@ -30,6 +30,15 @@
   }
   size();
   new ResizeObserver(size).observe(cv);
+  // #app's fit can change without this box changing its own size (the mobile tier ZOOMS #app: a ResizeObserver sees
+  // nothing then), so twice a second the drawing buffer is checked against the size the flame shows on screen
+  let checked = 0;
+  function recheck(now) {
+    if (now - checked < 500) return;
+    checked = now;
+    const r = cv.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+    if (r.width && (Math.abs(cv.width - r.width * d) > 2 || Math.abs(cv.height - r.height * d) > 2)) size();
+  }
 
   const embers = [];
   let gust = null, nextGust = 3 + rnd() * 5, last = performance.now(), acc = 0;
@@ -101,7 +110,8 @@
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(.1, (now - last) / 1000); last = now; acc += dt;
-    if (acc < 1 / 42 || document.hidden) return;
+    if (acc < (window.MOBILE ? 1 / 30 : 1 / 42) || document.hidden) return;
+    recheck(now);   // (the mobile tier: 30 fps is plenty for a flame this size)
     draw(now / 1000, acc); acc = 0;
   }
   requestAnimationFrame(frame);

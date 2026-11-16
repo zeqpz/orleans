@@ -9,7 +9,7 @@
 // The MOBILE tier (owner, 2026-11-16: "the mobile version is very laggy ... on the iPhone, Apple WebKit"). Every phone
 // and tablet: WebKit on iOS (Safari, CriOS, FxiOS, EdgiOS, iPadOS asking for the desktop site) and touch Android /
 // small touch screens. There the game is built light, after Tipsy Harvest's iOS reviews (zeqpz/fallslotsga 9c3ac82):
-// no Doc (no rig, atlas, canvas or sounds), no living street (bgscene.js) and no candle flame - one still painting
+// no Doc (no rig, atlas, canvas or sounds), no living street (bgscene.js) - one still painting
 // fitted to the phone instead (assets/mobile/: an upright one, and the lit 16:9 one for a phone on its side) - no
 // idle wanders, filters, backdrop blurs or blend modes, and #app is ZOOMED to fit instead of transform-scaled
 // (WebKit backs a layer at its layout size x DPR^2 and never scales it down for a scaled ancestor). Desktop is
@@ -3374,7 +3374,7 @@ document.documentElement.classList.toggle("mob", window.MOBILE);
     position: absolute; inset: 0; transform: none;
     background: #0d0b1c url("assets/mobile/bg_landscape.webp") center / cover no-repeat;
   }
-  html.mob #bgscene, html.mob #candleflame, html.mob #camnear, html.mob #charfx, html.mob .charshadow { display: none !important; }
+  html.mob #bgscene, html.mob #camnear, html.mob #charfx, html.mob .charshadow { display: none !important; }
   @media (orientation: portrait) {
     html.mob #bgwall { background: #0d0b1c url("assets/mobile/bg_portrait.webp") 50% 40% / cover no-repeat; }
   }
@@ -3382,6 +3382,31 @@ document.documentElement.classList.toggle("mob", window.MOBILE);
   @media (orientation: landscape) { html.mob .bonusintro .wall { background-image: url("assets/mobile/bg_landscape.webp"); } }
   html.mob *, html.mob *::before, html.mob *::after { filter: none !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; mix-blend-mode: normal !important; }
   html.mob .intro .intrograin { display: none !important; }
+  /* ...except the frosted glass behind the bonus shop, the rules panel and the bar's pop-ups (owner, 2026-11-16: "it
+     should still blur the background"): the game is at rest behind them, so the one blur layer costs little */
+  html.mob #bonusWrap, html.mob #infoWrap { background: rgba(8, 6, 10, .34); -webkit-backdrop-filter: blur(6px) !important; backdrop-filter: blur(6px) !important; }
+  html.mob .hudpop { -webkit-backdrop-filter: blur(10px) !important; backdrop-filter: blur(10px) !important; }
+  /* the bonus shop on an upright phone (owner, 2026-11-16: "make the bonus boxes for mobile less vertical"): one
+     wide card a row instead of tall columns - its banner on the left, the name, pips, words and max win in the
+     middle, the price and its button on the right. fitBonus still scales the whole panel to the window. */
+  @media (orientation: portrait) {
+    html.mob .bshop { gap: 12px; padding: 14px 12px 16px; }
+    html.mob .bshoprow { flex-direction: column; flex-wrap: nowrap; gap: 10px; align-items: center; }
+    html.mob .bscard { width: 470px; display: grid; grid-template-columns: 132px 1fr 132px; align-items: stretch; border-radius: 16px; }
+    html.mob .bscard:hover { transform: none; }
+    html.mob .bsban { aspect-ratio: auto; height: 100%; min-height: 118px; border-bottom: 0; border-right: 2px solid #000; }
+    html.mob .bsbody { align-items: flex-start; text-align: left; gap: 3px; padding: 9px 10px 8px 12px; }
+    html.mob .bspips { gap: 3px; }
+    html.mob .bspips i { width: 15px; height: 18px; }
+    html.mob .bsttl { font-size: 21px; }
+    html.mob .bsdesc { font-size: 14.5px; line-height: 1.25; min-height: 0; }
+    html.mob .bsmax { justify-content: flex-start; margin-top: auto; padding-top: 4px; font-size: 11.5px; letter-spacing: .08em; gap: 4px; }
+    html.mob .bsfoot { justify-content: center; gap: 0; padding: 8px 10px; border-top: 0; border-left: 2px solid rgba(0, 0, 0, .6); }
+    html.mob .bsprice { font-size: 23px; }
+    html.mob .bsx { font-size: 11px; letter-spacing: .1em; }
+    html.mob .bsget { margin-top: 7px; padding: 8px 0 9px; font-size: 20px; border-radius: 12px; }
+    html.mob .bscard.tog .bsget { font-size: 16px; }
+  }
   html.mob .infowrap { background: rgba(8, 6, 10, .82); }
   html.mob .rpwrap { background: rgba(6, 8, 18, .6); }
   html.mob .rpwrap.done { background: rgba(6, 8, 18, .35); }
@@ -3560,7 +3585,8 @@ document.documentElement.classList.toggle("mob", window.MOBILE);
 <script src="strips.js"></script>
 <script src="rgs.js"></script>
 <script src="rules.js"></script>
-<script>if (!window.MOBILE) document.write('<script src="sprayrim.js"><\/script><script src="bgscene.js"><\/script><script src="candleflame.js"><\/script>');</script>
+<script>if (!window.MOBILE) document.write('<script src="sprayrim.js"><\/script><script src="bgscene.js"><\/script>');</script>
+<script src="candleflame.js"></script>
 <script src="boardgl.js"></script>
 <script>if (!window.MOBILE) document.write('<script src="charrig.js"><\/script>');</script>
 <script>
@@ -3961,6 +3987,13 @@ const SYM_HOLD = ["land", "idle"];
 const SYM_HOLD_HEADROOM = window.MOBILE ? 1 : 1.1;   // (the mobile tier: frames at exactly the size the phone shows them)
 const CLIP_OF = { drop: "land", win: "hit" };   // the board's own names for the moments, and the clips that play
 let symReady = null;
+// The hit, Multi and idle clips (the bulk of the symbol download: 24-63 MB by screen) stream in AFTER the loading
+// screen (owner, 2026-11-16: "the loading screen ... takes forever"): it waits for the landings only, and these
+// start the moment it is done (or a replay asks for them, or 25 s pass), so they never share the line with what
+// the first screen needs. A clip not in yet holds its rest pose (rigPlay), only ever in the first seconds.
+let symRestGo = null;
+const symRestGate = new Promise(r => { symRestGo = r; });
+setTimeout(() => symRestGo(), 25000);
 // sheet px per rig unit the biggest symbol needs at rest on this screen, times the headroom -> the density to load
 const symDpr = () => Math.min(window.devicePixelRatio || 1, window.BoardGL && BoardGL.on ? BoardGL.MAX_RES : 99);
 function symWantDensity() {
@@ -4050,6 +4083,7 @@ function loadSymFrames() {
     // clip at a time, every symbol's at once.
     await Promise.all(ids.map(id => symSheet(id, "land")));
     SYMF.rest = (async () => {
+      await symRestGate;
       for (const clip of ["hit", "multi"]) await Promise.all(ids.map(id => symSheet(id, clip).catch(() => {})));
     })();
     SYMF.rest.then(() => Promise.all(ids.map(id => symSheet(id, "idle").catch(() => {}))));
@@ -6223,7 +6257,9 @@ const OPUS_OK = (() => { try { return !!new Audio().canPlayType('audio/ogg; code
 const musicRaw = {};
 const fetchMusic = name => musicRaw[name] || (musicRaw[name] =
   fetch(OPUS_OK ? MUSIC[name].ogg : MUSIC[name].aac).then(r => r.ok ? r.arrayBuffer() : null).catch(() => null));
-fetchMusic("base").then(() => Object.keys(MUSIC).forEach(name => fetchMusic(name)));
+// preloaded once the loading screen is done (symRestGate), so ~3.6 MB of music never shares the line with what it waits on;
+// a cue asked for before then fetches itself
+symRestGate.then(() => fetchMusic("base")).then(() => Object.keys(MUSIC).forEach(name => fetchMusic(name)));
 const musicTrack = {};   // name -> Promise<{ buf, at } | null>; at: where the cue's first frame sits in buf, in seconds
 function loadTrack(name) {
   if (musicTrack[name]) return musicTrack[name];
@@ -7809,18 +7845,8 @@ function setButtons(on) {
   $("rapidBtn").disabled = false;
   $("menuBtn").disabled = false;
 }
-// The bet survives a reload within the same session only: a new session always opens on the
-// server's defaultBetLevel (Engine checks that), a refresh mid-session keeps what was chosen.
-const betKey = () => "voodoobourbon.bet." + RGS.state.currency;
-function rememberBet() {
-  try { localStorage.setItem(betKey(), JSON.stringify({ s: RGS.sessionID, v: bet() })); } catch (e) { /* ignore */ }
-}
-function recallBet() {
-  try {
-    const b = JSON.parse(localStorage.getItem(betKey()) || "null");
-    return b && b.s === RGS.sessionID ? Number(b.v) || 0 : 0;
-  } catch (e) { return 0; }
-}
+// The bet is never carried over a reload (Engine review, 2026-11-16): a refresh with no round open always opens on
+// the server's defaultBetLevel from /authenticate; a round left open resumes at its own amount (boot).
 // last 50 rounds, per currency — no replay link because the RGS never returns the event id
 const histKey = () => "voodoobourbon.hist." + RGS.state.currency;
 function recordRound(mode, amount, payout, mult) {
@@ -7856,7 +7882,6 @@ function refreshBet() {
     const lbl = st.querySelector(".lbl");
     if (lbl) lbl.textContent = boost ? T("Boost") : T("Bet");
   }
-  if (!REPLAY) rememberBet();
   paintBonus();   // the chooser shows prices at the live bet, so it follows the stepper
   setButtons(!state.playing);
 }
@@ -8854,25 +8879,29 @@ function preloadAll(onProgress) {
   const sounds = Object.values(sfxRaw || {});
   let jobs = 0, done = 0;   // every promise one() is handed counts, so the bar ends at 100% exactly
   const tick = () => onProgress(jobs ? Math.min(1, done / jobs) : 1);
-  const one = pr => { jobs++; return pr.then(() => { done++; tick(); }, () => { done++; tick(); }); };
+  // w: a piece's share of the bar - the symbols' landings are ~a third of the bytes, so they are not one step of 300
+  const LOG = /[?&]loadlog=1(&|$)/.test(location.search), t0 = performance.now();   // ?loadlog=1: when each piece came in
+  const one = (pr, w = 1, name = "") => { jobs += w; const fin = () => { done += w; tick(); if (LOG && name) console.info(`[load] ${name} ${Math.round(performance.now() - t0)} ms`); }; return pr.then(fin, fin); };
   const waits = pics.map(u => one(new Promise((res, rej) => {
     const img = new Image();
     img.onload = res; img.onerror = rej;
     img.src = u;
     heldPics.push(img);
   })));
-  waits.push(...sounds.map(one));
-  waits.push(one(prepareSpray()));   // the spray can, tinted for every Multi value
-  waits.push(one(symAllReady()));    // the animated symbols: Blender's frames, every clip cut and uploaded
-  waits.push(one(warmFX()));         // the dissolves and the motion blur, cut before the first round
-  waits.push(one(charsLoaded));      // the two characters, every atlas page on the GPU
-  waits.push(one(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()));
+  waits.push(...sounds.map(p => one(p)));   // (not map(one): its index would be taken as the weight)
+  if (LOG) Promise.all(waits).then(() => console.info(`[load] pictures+sounds ${Math.round(performance.now() - t0)} ms`));
+  waits.push(one(prepareSpray(), 1, "spray"));   // the spray can, tinted for every Multi value
+  waits.push(one(loadSymFrames(), Math.max(20, Math.round(waits.length * .5)), "symbol landings"));   // the animated symbols' landings (the rest stream in after: symRestGate)
+  waits.push(one(warmFX(), 1, "fx"));         // the dissolves and the motion blur, cut before the first round
+  waits.push(one(charsLoaded, 1, "chars"));      // the two characters, every atlas page on the GPU
+  waits.push(one(document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve(), 1, "fonts"));
   // the bonus screen's faces are not on the page yet, so fonts.ready would not wait for them
   if (document.fonts && document.fonts.load) {
     for (const f of ['1em "Apocalypse Grunge"', '1em "aaaiight"', '1em "aaaiight fat"', '1em "Smashed Graffiti"', '1em "Smashed Graffiti Outline"']) waits.push(one(document.fonts.load(f)));
   }
   tick();
-  return Promise.all(waits);
+  // never held shut: whatever has not come in 30 s later carries on loading behind the game (it all has a fallback)
+  return Promise.race([Promise.all(waits), new Promise(r => setTimeout(r, 30000))]);
 }
 // Icons drifting slowly round the loading screen, bouncing off its edges, off each other, and
 // off the block in the middle - the logo, the bar and the words, which they never cross - so
@@ -9096,7 +9125,7 @@ function runIntro() {
     setTimeout(() => wrap.remove(), 1300);
   };
   const loaded = preloadAll(p => { if (fill) fill.style.width = (p * 100).toFixed(1) + "%"; });
-  loaded.then(() => { if (fill) fill.style.width = "100%"; if (!VOODOO) warmBursts(); });   // (no icon bursts in the voodoo build: each is hexed)
+  loaded.then(() => { if (fill) fill.style.width = "100%"; symRestGo(); if (!VOODOO) warmBursts(); });   // (no icon bursts in the voodoo build: each is hexed)
   if (REDUCED_MOTION) {
     wrap.classList.add("static");   // (the word, its trademark and the bar, simply there)
     loaded.then(() => after(600, finish));
@@ -10456,6 +10485,7 @@ function replayWords() {
 
 async function bootReplay(p) {
   REPLAY = true;
+  symRestGo();   // (no loading screen: every clip now)
   document.body.classList.add("replay");
   const intro = $("intro"); if (intro) intro.remove();
   // Only the round's coordinates are required; currency and amount are optional and may be missing or junk.
@@ -10609,11 +10639,11 @@ async function boot() {
   }
 
   state.bets = RGS.betLevels();
-  // A reload within this session keeps the bet the player chose; anything else opens on the
-  // server's defaultBetLevel - or the level nearest it, should the default not be one of them.
+  // Every load opens on the server's defaultBetLevel from /authenticate - a refresh included, whatever was chosen
+  // before it (Engine review, 2026-11-16) - or the level nearest it, should the default not be one of them. A round
+  // left open overrides this below: it resumes at the amount it was staked at.
   const def = (RGS.state.config && RGS.state.config.defaultBetLevel) || 0;
-  let at = state.bets.indexOf(recallBet());
-  if (at < 0) at = state.bets.indexOf(def);
+  let at = state.bets.indexOf(def);
   if (at < 0 && def) at = state.bets.reduce((best, v, i) => Math.abs(v - def) < Math.abs(state.bets[best] - def) ? i : best, 0);
   state.betIdx = Math.max(0, at);
   if ($("maxWin")) $("maxWin").textContent = "x" + RULES.MAX_WIN;
