@@ -277,6 +277,7 @@ class Handler(BaseHTTPRequestHandler):
                 "state": book.get("events", []),
             }
             w["round"] = rnd if payout > 0 else None
+            w["plays"] = w.get("plays", 0) + 1
             return self._json({"round": rnd, "balance": {"amount": w["balance"], "currency": w["currency"]}})
 
         if path == "/wallet/end-round":
@@ -285,11 +286,22 @@ class Handler(BaseHTTPRequestHandler):
                 return self._err("ERR_VAL", message="player does not have active round")
             w["balance"] += rnd["payout"]
             w["round"] = None
+            w["ends"] = w.get("ends", 0) + 1
+            w["lastPayout"] = rnd["payout"]
             # end-round answers with the bare wallet, not a { balance: ... } envelope.
             return self._json({"amount": w["balance"], "currency": w["currency"]})
 
         if path == "/bet/event":
+            # the progress marker: kept on the open round, which authenticate hands back (round.event) so a reload
+            # can resume from it
+            if w["round"] is not None:
+                w["round"]["event"] = body.get("event")
+                w.setdefault("marks", []).append(body.get("event"))
             return self._json({"event": body.get("event")})
+
+        if path == "/mock/state":         # test-only: what the session did (the probes check a resumed round with it)
+            return self._json({"marks": w.get("marks", []), "ends": w.get("ends", 0), "plays": w.get("plays", 0),
+                               "lastPayout": w.get("lastPayout"), "balance": w["balance"], "open": w["round"] is not None})
 
         # Test-only (the mock, never the live RGS): the session's next /wallet/play in `mode` draws book `event`, so a
         # forced round is the round the server holds - a reload mid-round resumes into that very book.
@@ -318,6 +330,7 @@ def main():
     url = (f"http://localhost:{PORT}/index.html?sessionID=test"
            f"&rgs_url=http://localhost:{PORT}&lang=en&device=desktop")
     print(f"\nMock RGS + game on {url}\n", flush=True)
+    ThreadingHTTPServer.request_queue_size = 128   # (several probes loading at once were refused at the default 5)
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
 
 

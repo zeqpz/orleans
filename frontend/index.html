@@ -4012,6 +4012,10 @@ function tierGlow(name) {
 // Voodoo on Bourbon: Multi values in the voodoo numerals (tools/nola/vnum.py): each character one glyph picture
 const VGLYPH = { x: "x", ".": "dot" };
 function vNum(el, text) {
+  // (review 4) the same figure again: its glyphs stand - the grid is repainted at every reveal and Multi, and each
+  // repaint used to make every value's glyphs anew (thousands of elements a bonus, for the collector to find)
+  if (el._vnum === text && el.childElementCount === [...text].length) return;
+  el._vnum = text;
   el.replaceChildren(...[...text].map(ch => { const i = document.createElement("i"); i.className = "vg g-" + (VGLYPH[ch] || ch); return i; }));
   el.setAttribute("aria-label", text);
 }
@@ -5088,7 +5092,10 @@ function makeSmear(img) {
       }
     }
     g.putImageData(out, 0, 0);
-    cv.toBlob(blob => (blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("no smear"))), "image/png");
+    cv.toBlob(blob => {
+      if (window.MOBILE) { cv.width = 0; cv.height = 0; }   // (review 4: a finished scratch canvas holds no pixels)
+      blob ? resolve(URL.createObjectURL(blob)) : reject(new Error("no smear"));
+    }, "image/png");
   });
 }
 function smearOn(cell, name) {
@@ -5168,11 +5175,23 @@ function burstMeasure(r, y, sym) {
 // (the mobile tier cuts the kit at the size a phone shows the icon, ~110 device px, in 12 steps: 289 canvases / 56 MB -> 14 MB)
 const HEX_STEPS = window.MOBILE ? 12 : 16, HEX_PX = window.MOBILE ? 132 : 220, HEX_MS = 900;
 const hexKits = new Map();   // one dissolve (and green ghost) per symbol picture, cut on first use or while idle
+// (the mobile tier, iOS review 4, 2026-11-17) A phone used to cut every dissolve again for each tumble and throw it
+// away after: 14 canvases and 13 ImageData a symbol, ~1,700 canvases made through one Xtreme Bonus (3,400 over three
+// bonuses). In WebKit a canvas's pixels are native memory that only goes when its JS object is collected, and the
+// collector does not feel that weight - dead canvases can pile up on a device until the page is killed. Now the
+// HEX_KEEP dissolves used most lately stay (the same few symbols come round every tumble: no re-cut, no read-back),
+// a dissolve that is let go hands its canvas ELEMENTS to the next one cut (their pixels freed at once, width 0), and
+// one scratch canvas is read from for all of them. The frames are made by the very same code: the same pixels.
+const HEX_KEEP = 6;      // dissolves held at once on a phone, besides the spirit's (~1 MB each at 132 px)
+const hexSpare = [];     // canvas elements of dissolves let go (no pixels: width 0), taken by the next one cut
+let hexScratch = null;   // the one canvas a phone reads every icon back from
+const hexCanvas = () => hexSpare.pop() || document.createElement("canvas");
 function hexKit(img) {
-  if (img && hexKits.has(img.src)) return hexKits.get(img.src);
+  if (img && hexKits.has(img.src)) { const k = hexKits.get(img.src); k.used = performance.now(); return k; }
   if (!img || !img.naturalWidth) return null;
   const S = HEX_PX, ar = img.naturalHeight / img.naturalWidth, w = S, h = Math.round(S * ar);
-  const base = document.createElement("canvas"); base.width = w; base.height = h;
+  const base = window.MOBILE ? (hexScratch || (hexScratch = document.createElement("canvas"))) : document.createElement("canvas");
+  base.width = w; base.height = h;
   const bx = gfxCtx(base, "2d", { willReadFrequently: true });
   if (!bx) return null;   // (the safety net) no dissolve: the tile simply goes
   bx.drawImage(img, 0, 0, w, h);
@@ -5191,7 +5210,7 @@ function hexKit(img) {
   const frames = [];
   for (let k = 0; k < HEX_STEPS; k++) {
     const thr = k / (HEX_STEPS - 1) * 1.1, band = .07;
-    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const c = hexCanvas(); c.width = w; c.height = h;
     const cx = gfxCtx(c);
     if (!cx) return null;
     const out = cx.createImageData(w, h), d = out.data, sd = src.data;
@@ -5208,13 +5227,14 @@ function hexKit(img) {
     frames.push(c);
   }
   // the icon's ghost: its own silhouette washed in ectoplasm green, faintly showing its drawing through
-  const ghost = document.createElement("canvas"); ghost.width = w; ghost.height = h;
+  const ghost = hexCanvas(); ghost.width = w; ghost.height = h;
   const gx = gfxCtx(ghost);
   if (!gx) return null;
   gx.drawImage(img, 0, 0, w, h);
   gx.globalCompositeOperation = "source-atop";
   gx.fillStyle = "rgba(150, 255, 130, .78)"; gx.fillRect(0, 0, w, h);
-  const kit = { img, frames, w, h, ghost };
+  if (window.MOBILE) { base.width = 0; base.height = 0; }   // (the scratch canvas holds no pixels between cuts)
+  const kit = { img, frames, w, h, ghost, used: performance.now() };
   hexKits.set(img.src, kit);
   return kit;
 }
@@ -5239,10 +5259,17 @@ function hexKitWarm(names) {
 // (SYM_DEMAND) let every dissolve go but these symbols' (and the spirit's), unless one is on the board now
 function hexKitTrim(keep) {
   const keepSrc = new Set([...keep, "ES"].map(n => FLAT[n] && FLAT[n].src).filter(Boolean));
-  for (const [src, kit] of [...hexKits]) {
-    if (keepSrc.has(src) || bursts.some(b => b.kit === kit || b.ghost === kit.ghost)) continue;
+  // (review 4) only past HEX_KEEP, the ones used longest ago first - never one wanted next or still playing
+  const free = [...hexKits].filter(([src, kit]) => !keepSrc.has(src) && !bursts.some(b => b.kit === kit || b.ghost === kit.ghost))
+    .sort((a, b) => (a[1].used || 0) - (b[1].used || 0));
+  let over = hexKits.size - 1 - HEX_KEEP;   // (the spirit's is not counted)
+  for (const [src, kit] of free) {
+    if (over-- <= 0) break;
     hexKits.delete(src);
-    for (const c of [...kit.frames, kit.ghost]) if (c) { c.width = 0; c.height = 0; }   // the backing store goes now, not at the next GC
+    for (const c of [...kit.frames, kit.ghost]) if (c) {
+      c.width = 0; c.height = 0;   // the backing store goes now, not at the next GC
+      if (hexSpare.length < 4 * (HEX_STEPS + 1)) hexSpare.push(c);   // and the element is used again
+    }
   }
 }
 // what the round draws for the first time - the dissolves and the motion blur - made once, before play
@@ -7787,9 +7814,79 @@ const RGS_MESSAGE = {
 // message the server wrote passes through the same word list as ours.
 const rgsMessage = (err, fallback) => T(RGS_MESSAGE[err && err.code] || (err && err.message) || fallback || "Something went wrong — try again.");
 
+// A bonus resumed where the player left it (Engine, iPhone 12, 2026-11-17: "crashes during Bonus Mode, and the issue
+// persists even after reloading"). A round left open used to be replayed from its first event, so a bonus that could
+// not be finished on a phone could not be finished after a reload either. Now a marker goes to the RGS (/bet/event:
+// its "progress marker so a disconnect can resume mid-round") as each free spin is done - the index of the event the
+// round stands at, the next updateFreeSpin or the freeSpinEnd - and authenticate hands it back on the open round
+// (round.event). On a reload the events before it are not played: what they left behind (the board, the Multis'
+// values, the running total, the free-spin count) is put in place at once, with no intro, no clips, no sound, and the
+// round carries on from that free spin to TOTAL WIN and end-round. The payout is the round's own (round.payout), as
+// ever. A marker that is missing, not a whole number, out of range or not at a free spin's start: the round replays
+// from its first event, as before. Replays (settle: false) neither mark nor resume.
+function resumePoint(round) {
+  try {
+    const evs = (round && round.events) || [], raw = round && round.event;
+    const m = typeof raw === "number" ? raw : (typeof raw === "string" && /^\d{1,6}$/.test(raw.trim())) ? Number(raw.trim()) : NaN;
+    if (!Number.isInteger(m) || m <= 0 || m >= evs.length) return 0;
+    const t = evs[m] && evs[m].type;
+    if (t !== "updateFreeSpin" && t !== "freeSpinEnd") return 0;
+    if (!evs.slice(0, m).some(e => e && e.type === "enterBonus")) return 0;
+    return m;
+  } catch (e) { return 0; }
+}
+// what the events before `m` left behind, put in place with nothing played; false: could not (the round replays whole)
+function fastForward(evs, m) {
+  try {
+    let extreme = false, cur = 0, total = 0, board = null;
+    for (let i = 0; i < m; i++) {
+      const e = evs[i];
+      if (!e) continue;
+      if (e.type === "reveal") {
+        board = e.board;
+        if (e.gameType === "basegame") state.grid = emptyGrid();
+        if (e.anticipation && e.anticipation.some(a => a > 0)) state.anticipated = true;
+      } else if (e.type === "booster") {
+        state.grid = (e.gridMults || []).map(col => col.slice());
+        state.multiTotal += (e.boosters || []).length;
+      } else if (e.type === "lineMults") state.grid = (e.gridMults || []).map(col => col.slice());
+      else if (e.type === "updateTumbleWin") state.totalWin = cents(e.amount);
+      else if (e.type === "setTotalWin") { state.totalWin = cents(e.amount); state.roundTotal = cents(e.amount); state.spinWin = 0; }
+      else if (e.type === "freeSpinTrigger") { state.bonusHit = true; state.fsTotal = e.totalFs; }
+      else if (e.type === "extremeTrigger") {
+        state.bonusHit = true; extreme = true;
+        state.fsTotal = e.totalFs ?? (e.reason === "extreme_upgrade" ? state.fsTotal : EXTREME_DIRECT_SPINS);
+      } else if (e.type === "enterBonus") state.grid = emptyGrid();
+      else if (e.type === "updateFreeSpin") {
+        cur = e.amount + 1; total = e.total; state.fsTotal = e.total;
+        if (e.amount === 0) { state.fsFrom = state.roundTotal || 0; state.fsWinEnd = null; }
+        state.spinWin = 0;
+      }
+    }
+    // the last board dealt (its tumbles are not replayed: it falls out as the next free spin starts)
+    if (board) for (let r = 0; r < REELS; r++) {
+      state.pad[r] = board[r][0];
+      for (let y = 0; y < ROWS; y++) if (board[r] && board[r][y + 1]) setCell(r, y, board[r][y + 1]);
+    }
+    paintGrid();
+    setRoundWin(state.totalWin);
+    const card = $("fsCard");
+    card.classList.remove("leaving");
+    card.classList.toggle("x", extreme);
+    paintFsCount(cur, total || state.fsTotal || cur, true);
+    card.classList.add("on");
+    fitToScreen();
+    paintFsWin();
+    return true;
+  } catch (e) { console.warn("resume: the round replays from its start:", e && e.message); return false; }
+}
+// the marker for the event the round stands at (never awaited in the round's path; RGS.event never throws)
+let roundMark = null;
+const markable = (ev, evs, i) => !!ev && (ev.type === "freeSpinEnd" || (ev.type === "updateFreeSpin" && ev.amount >= 1));
+
 /** Animate a round's event stream, then settle it. Shared by play, resume and replay —
  *  a replay is watched, not played, so it never touches the wallet (settle: false). */
-async function presentRound(round, { settle = true } = {}) {
+async function presentRound(round, { settle = true, from = 0 } = {}) {
   $("spinBtn").classList.add("armed");   // lime for as long as the round is playing out
   spinArrows.start();                    // and slowly turning
   state.totalWin = 0;
@@ -7813,8 +7910,19 @@ async function presentRound(round, { settle = true } = {}) {
   console.debug(`round ${round.betID ?? round.id} pays ${mult.toFixed(2)}x bet`);
   const evs = round.events || [];
   if (SYM_DEMAND) symDropAll(["idle"], new Set([...SYM_ALWAYS].map(n => n + "_idle")));   // (mobile) the idles rest through a round
-  for (let i = 0; i < evs.length; i++) {
+  roundMark = null;
+  let start = 0;
+  if (settle && from > 0) {   // resumed part-way through its free spins (resumePoint)
+    if (fastForward(evs, from)) start = from;
+    else {   // could not: everything back as a round starts, and it plays whole
+      state.totalWin = 0; state.roundTotal = 0; state.spinWin = 0; state.fsFrom = 0; state.fsWinShown = -1; state.fsWinEnd = null;
+      state.grid = emptyGrid(); state.anticipated = false; state.bonusHit = false; state.multiTotal = 0;
+      try { $("fsCard").classList.remove("on", "leaving"); setRoundWin(0); paintGrid(); } catch (e) { /* as it stands */ }
+    }
+  }
+  for (let i = start; i < evs.length; i++) {
     const ev = evs[i];
+    if (settle && markable(ev, evs, i)) { try { roundMark = RGS.event(String(i)); } catch (e) { /* bookkeeping only */ } }
     state.peek = evs[i + 1] || null;   // a handler can look one event ahead (the bonus upgrade shows one screen, not two)
     if (SYM_DEMAND && ev.type === "reveal") symSpin(evs, i);   // (mobile) the clips this spin plays, read off the book
     const fn = handlers[ev.type];
@@ -7836,6 +7944,8 @@ async function presentRound(round, { settle = true } = {}) {
   // Settle before celebrating: end-round is what actually pays, and its response
   // carries the authoritative balance. Showing a win we hadn't banked would be a lie.
   if (settle) {
+    // (the last marker is answered before the round is settled, so the two never cross; it cannot fail, only be slow)
+    if (roundMark) { await Promise.race([roundMark, new Promise(r => setTimeout(r, 1500))]).catch(() => {}); roundMark = null; }
     try {
       await RGS.endRound();
       setBalance(RGS.state.balance, win > 0 ? "up" : null);
@@ -11178,7 +11288,7 @@ async function boot() {
     state.playing = true;
     setButtons(false);
     notice(T("Resuming your round..."), false, 2600);
-    try { await presentRound(open); } catch (e) { /* surfaced by presentRound */ }
+    try { await presentRound(open, { from: resumePoint(open) }); } catch (e) { /* surfaced by presentRound */ }
     state.playing = false;
     setButtons(true);
   }

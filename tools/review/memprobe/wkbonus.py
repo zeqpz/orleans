@@ -11,7 +11,7 @@ Two ways in:
           RGS's open round (authenticate) and plays to its end-round.
 Needs the throwaway venv with playwright + psutil + WebKit (see wkprobe.py).
 usage: wkbonus.py OUTJSON --base URL --mode extremebonus --event 3111 [--extra "&symdemand=0"] [--rounds 1] [--live]
-                   [--reload 6] [--crios] [--land] [--tail 15] [--init JS]
+                   [--reload 6] [--shot PNG] [--crios] [--land] [--tail 15] [--init JS] [--skip] [--gc] [--poll S]
 """
 import json, sys, threading, time, random
 import psutil
@@ -90,7 +90,7 @@ COUNTS = """JSON.stringify((() => { const C = Object.assign({}, window.__ct || {
   C.nodes = document.getElementsByTagName('*').length; C.canvases = document.querySelectorAll('canvas').length;
   try { C.anims = document.getAnimations().length; } catch (e) {}
   try { C.symHeld = SYMF.sheets.size; } catch (e) {}
-  try { C.playing = !!state.playing; C.open = !!(RGS.state.round); } catch (e) {}
+  try { C.playing = !!state.playing; C.open = !!(RGS.state.round); C.fs = state.fsShown ? state.fsShown.cur : 0; } catch (e) {}
   C.phase = (document.getElementById('replayPlay') || { dataset: {} }).dataset.phase || '';
   C.lite = !!(window.GFX && GFX.low);
   return C; })())"""
@@ -225,12 +225,25 @@ with sync_playwright() as pw:
                     mark(f"reload at spin {reload_at} ({r})")
                     pg.reload(); enter(); pg.evaluate(CLICKER)
                     mark("resumed (features passed)")
-                    r = follow("!!(window.__ct.spin > 0 && !state.playing && !RGS.state.round)", 600)
+                    n_before = len(counts)
+                    t_res = time.time() - T0
+                    wait_for("state.playing", 30)
+                    if "--shot" in a:   # what the player sees as the round comes back
+                        time.sleep(1.2); pg.screenshot(path=opt("--shot", "resume.png"))
+                    r = follow("!state.playing && !RGS.state.round", 600)
                     mark(f"resumed round over: {r}")
+                    fs = [c.get("fs") for c in counts[n_before:] if c.get("fs")]
+                    res["resumed_from_fs"] = fs[0] if fs else None
+                    res["resumed_peak_web"] = round(max((x.get("web", 0) for x in samples if x["t"] >= t_res), default=0), 1)
+                    res["resumed_reveals"] = counts[-1].get("spin") if counts else None
                 else:
                     r = follow("window.__done", 600)
                     mark(f"round {c + 1} over: {r} err={pg.evaluate('window.__err')}")
                 time.sleep(2)
+            # what the session did, by the mock's own count, against what the page shows
+            res["session"] = pg.evaluate("""async () => { const m = await (await fetch('/mock/state', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionID: RGS.sessionID }) })).json();
+              return Object.assign(m, { shownWin: document.getElementById('roundWin').textContent, roundPayout: state.roundPayout, shownBalance: document.getElementById('balance').textContent, rgsBalance: RGS.state.balance }); }""")
         else:
             url = f"{base}/?replay=true&game=test&version=1&mode={mode}&event={event}&amount=1000000&rgs_url={base}{extra}"
             pg.goto(url)
@@ -301,6 +314,8 @@ if counts:
     keys = [k for k in l if isinstance(l.get(k), (int, float)) and not isinstance(l.get(k), bool) and k not in ("t",)]
     print("counts first->last:", " ".join(f"{k}={f.get(k)}->{l.get(k)}" for k in keys))
 print("console:", log[:8])
+if res.get("session"):
+    print("session:", json.dumps(res["session"]), "| resumed from free spin", res.get("resumed_from_fs"), "reveals after reload", res.get("resumed_reveals"), "resumed peak web", res.get("resumed_peak_web"))
 rq = res.get("requests") or {}
 print("requests:", sum(rq.values()), "repeated:", sorted(((k, v) for k, v in rq.items() if v > 1), key=lambda kv: -kv[1])[:15])
 if res.get("domdiff"):
