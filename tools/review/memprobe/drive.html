@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- Drives a replayed round inside an iframe on the mock's own origin, with no automation attached (iOS review 4,
+     2026-11-17): Playwright's WebKit binary run by itself (wknoinspect.py) loads this page, so no Web Inspector is
+     recording the page while it plays. Progress is posted to the mock (/mock/log). Served by mock_rgs.py at
+     /mock/drive.html?rounds=3&skip=1&w=390&h=844&game=<url-encoded query for the game>. -->
+<meta charset="utf-8">
+<body style="margin:0;background:#000">
+<iframe id="g" style="border:0"></iframe>
+<script>
+const q = new URLSearchParams(location.search);
+const rounds = +q.get("rounds") || 1, skip = q.get("skip") === "1";
+const f = document.getElementById("g");
+f.style.width = (+q.get("w") || 390) + "px"; f.style.height = (+q.get("h") || 844) + "px";
+const t0 = performance.now();
+const log = m => fetch("/mock/log", { method: "POST", headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(Object.assign({ sessionID: "drive", t: Math.round(performance.now() - t0) }, m)) }).catch(() => {});
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const until = async (fn, ms = 900000) => { const s = performance.now(); while (performance.now() - s < ms) { try { if (fn()) return true; } catch (e) {} await sleep(300); } return false; };
+f.src = "/?" + q.get("game");
+f.onload = async () => {
+  const w = f.contentWindow, d = f.contentDocument;
+  w.addEventListener("error", e => log({ ev: "error", msg: String(e.message) }));
+  w.addEventListener("unhandledrejection", e => log({ ev: "rejection", msg: String(e.reason && (e.reason.stack || e.reason)) }));
+  await until(() => d.getElementById("replayPlay").dataset.phase === "ready");
+  if (q.get("init")) { try { w.eval(q.get("init")); log({ ev: "init" }); } catch (e) { log({ ev: "error", msg: "init: " + e }); } }   // an ablation, run in the game
+  const H = w.eval("handlers"), S = w.eval("state");
+  let spins = 0;
+  const rv = H.reveal;
+  H.reveal = async (...x) => { spins++; log({ ev: "spin", spins }); return rv(...x); };
+  const seen = {};
+  setInterval(() => {
+    for (const s of [".bonusintro", ".totalwin"]) {
+      const e = d.querySelector(s);
+      if (e && e.getBoundingClientRect().width > 0) { seen[s] = (seen[s] || 0) + 1; if (seen[s] > 8) { e.click(); seen[s] = 0; } }
+    }
+    if (skip && S.playing) S.skip = true;
+  }, 400);
+  log({ ev: "ready" });
+  await sleep(3000);
+  for (let r = 0; r < rounds; r++) {
+    const s0 = spins;
+    d.getElementById("replayPlay").click();
+    await until(() => spins > s0, 30000);
+    await until(() => !S.playing && d.getElementById("replayPlay").dataset.phase === "done");
+    log({ ev: "round", r: r + 1, spins });
+    await sleep(2000);
+  }
+  log({ ev: "done", spins });
+};
+</script>

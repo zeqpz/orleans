@@ -29,6 +29,7 @@ PUBLISH = os.path.join(GAME, "library", "publish_files")
 CACHE = os.path.join(GAME, "library", "beta_cache")
 
 PORT = 8755                     # its own port, beside the graffiti build (8733) and Tipsy Harvest (8744)
+CACHE_STATIC = "--cache" in sys.argv
 UNIT = 1_000_000
 ID_RE = re.compile(rb'"id":\s*(\d+)')
 
@@ -117,13 +118,16 @@ class Mode:
 
     def draw(self):
         roll = random.randrange(self.total)
-        book_id = self.ids[bisect.bisect_right(self.cum, roll)]
+        return self.book(self.ids[bisect.bisect_right(self.cum, roll)])
+
+    def book(self, book_id):
         with open(self.jsonl, "rb") as fh:
             fh.seek(self.offsets[book_id])
             return json.loads(fh.readline())
 
 
 LOADED = {}
+DRIVE_LOG = []   # test-only: what drive.html reports
 
 
 START_BALANCE = 1_000_000 * UNIT   # test float; the real wallet governs on Stake
@@ -185,6 +189,12 @@ class Handler(BaseHTTPRequestHandler):
                 "payoutMultiplier": book["payoutMultiplier"] / 100,
                 "costMultiplier": MODES[parts[2]],
             })
+        # test-only: the page that plays a replay with no automation attached (tools/review/memprobe/wknoinspect.py)
+        if path == "/mock/drive.html":
+            with open(os.path.join(ROOT, "tools", "review", "memprobe", "drive.html"), "rb") as fh:
+                return self._send(200, fh.read(), MIME[".html"])
+        if path == "/mock/log":
+            return self._json(DRIVE_LOG)
         if path in ("/", "/index.html"):
             path = "/index.html"
         local = os.path.normpath(os.path.join(HERE, path.lstrip("/")))
@@ -193,7 +203,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         ctype = MIME.get(os.path.splitext(local)[1].lower(), "application/octet-stream")
         with open(local, "rb") as fh:
-            self._send(200, fh.read(), ctype)
+            # --cache: static files cacheable for an hour, as a CDN would send them (the default no-store makes the
+            # browser fetch a picture again each time a new element shows it)
+            self._send(200, fh.read(), ctype, "public, max-age=3600" if CACHE_STATIC and path != "/index.html" else "no-store")
 
     def do_POST(self):
         path = urlparse(self.path).path
@@ -244,7 +256,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._err("ERR_IPB")
             w["balance"] -= price
             w["bet"], w["mode"] = amount, mode
-            book = LOADED[mode].draw()
+            forced = w.get("force") or []
+            if forced and forced[0][0] == mode:
+                book = LOADED[mode].book(forced.pop(0)[1])
+            else:
+                book = LOADED[mode].draw()
             # Shape it the way the live RGS does: the event stream is called `state`, the
             # round total is a plain multiple of the bet (the books store hundredths), and a
             # round that pays nothing is settled here and comes back inactive.
@@ -275,10 +291,26 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/bet/event":
             return self._json({"event": body.get("event")})
 
+        # Test-only (the mock, never the live RGS): the session's next /wallet/play in `mode` draws book `event`, so a
+        # forced round is the round the server holds - a reload mid-round resumes into that very book.
+        if path == "/mock/log":           # test-only: drive.html's progress
+            DRIVE_LOG.append(body)
+            return self._json({"n": len(DRIVE_LOG)})
+
+        if path == "/mock/force":
+            mode, ev = body.get("mode"), body.get("event")
+            if mode not in LOADED or not isinstance(ev, int) or ev not in LOADED[mode].offsets:
+                return self._err("ERR_VAL", message="unknown mode or event")
+            w.setdefault("force", []).append((mode, ev))
+            return self._json({"queued": len(w["force"])})
+
         return self._json({"error": "not found"}, 404)
 
 
 def main():
+    global PORT
+    if "--port" in sys.argv:            # a second mock beside the usual one (probes)
+        PORT = int(sys.argv[sys.argv.index("--port") + 1])
     for name in MODES:
         m = Mode(name)
         m.load()

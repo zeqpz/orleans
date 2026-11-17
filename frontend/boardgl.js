@@ -33,6 +33,24 @@
   // the GPU are the very same. ?keepsrc=1 keeps the copies (QA).
   const RELEASE = !!window.MOBILE && !/[?&]keepsrc=1\b/.test(location.search);
   const released = [];   // { source, url, size } of every atlas whose bitmap was let go
+  // (mobile, iOS review 4, 2026-11-17: "the game crashes during Bonus Mode") Each clip's FILE is fetched once and kept,
+  // compressed (every symbol's hit and Multi clips are 6.5 MB at d8, the idles 4.7), and the workers - made once, kept
+  // for the session - decode from it. The phone tier brings clips in and lets them go every free spin, and each time it
+  // downloaded the sheet again, in a pair of workers made for it and let go 1.5 s later: a download and two new worker
+  // threads per free spin, for files it already had. In Playwright's WebKit (iPhone 12) each download stayed in the
+  // page's process (~1.4x its bytes, research/ios_memory_4: likely the inspector's own record of it, so on a device
+  // perhaps less) and the process climbed with every free spin. Same files, same decode and resize: the same pixels.
+  // ?sheethold=0 fetches as before (QA).
+  const files = RELEASE && !/[?&]sheethold=0\b/.test(location.search) ? new Map() : null;
+  const sheetFile = url => {
+    let f = files.get(url);
+    if (!f) {
+      f = fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error(url + " -> HTTP " + r.status)));
+      files.set(url, f);
+      f.catch(() => files.delete(url));
+    }
+    return f;
+  };
   let lost = false, rebuilding = null;
 
   let app = null, board = null, root = null, tried = null;
@@ -115,9 +133,9 @@
       const src = `onmessage = async e => {
         const q = e.data;
         try {
-          const r = await fetch(q.url);
-          if (!r.ok) throw new Error(q.url + " -> HTTP " + r.status);
-          const sheet = await createImageBitmap(await r.blob());
+          let b = q.blob;   // (mobile: the page's copy of the file, shared, not copied)
+          if (!b) { const r = await fetch(q.url); if (!r.ok) throw new Error(q.url + " -> HTTP " + r.status); b = await r.blob(); }
+          const sheet = await createImageBitmap(b);
           let bmp = sheet;
           if (q.rw) { bmp = await createImageBitmap(sheet, 0, 0, q.sw, q.sh, { resizeWidth: q.rw, resizeHeight: q.rh, resizeQuality: "high" }); sheet.close(); }
           postMessage({ id: q.id, bmp }, [bmp]);
@@ -127,7 +145,9 @@
       // (mobile, review 3) the workers are let go a moment after their last sheet and made again for the next: in WebKit
       // each one's heap kept every sheet it had fetched until a GC that seldom came (Playwright WebKit, iPhone 12: the
       // page's process ~90 MB lighter through a round with the clips coming and going without them)
-      const SHED = RELEASE ? 1500 : 0;
+      // (review 4: with the files held the workers fetch nothing, so their heaps hold no sheets and they are kept;
+      // ?sheethold=0 sheds them as review 3 did)
+      const SHED = RELEASE && !files ? 1500 : 0;
       let ws = null, idle = 0;
       const onmessage = e => {
         const p = wait.get(e.data.id); if (!p) return; wait.delete(e.data.id); e.data.err ? p.no(new Error(e.data.err)) : p.ok(e.data.bmp);
@@ -151,9 +171,10 @@
       const fw = k < 1 ? Math.max(1, Math.round(sh.w * k)) : sh.w, fh = k < 1 ? Math.max(1, Math.round(sh.h * k)) : sh.h;
       const size = k < 1 ? { sw: cols * sh.w, sh: rows * sh.h, rw: cols * fw, rh: rows * fh } : {};
       let bmp = null;
-      if (sheetWorker) bmp = await sheetWorker(Object.assign({ url: new URL(url, location.href).href }, size));
+      const held = files ? await sheetFile(url) : null;
+      if (sheetWorker) bmp = await sheetWorker(Object.assign(held ? { blob: held } : { url: new URL(url, location.href).href }, size));
       else {
-        const blob = await fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error(url + " -> HTTP " + r.status)));
+        const blob = held || await fetch(url).then(r => r.ok ? r.blob() : Promise.reject(new Error(url + " -> HTTP " + r.status)));
         const sheet = await createImageBitmap(blob);
         bmp = sheet;
         if (k < 1) {
@@ -206,9 +227,10 @@
         await slot();
         try {
           let bmp;
-          if (sheetWorker) bmp = await sheetWorker(Object.assign({ url: new URL(r.url, location.href).href }, r.size));
+          const held = files ? await sheetFile(r.url) : null;
+          if (sheetWorker) bmp = await sheetWorker(Object.assign(held ? { blob: held } : { url: new URL(r.url, location.href).href }, r.size));
           else {
-            const sheet = await createImageBitmap(await fetch(r.url).then(x => x.blob()));
+            const sheet = await createImageBitmap(held || await fetch(r.url).then(x => x.blob()));
             bmp = sheet;
             if (r.size.rw) { bmp = await createImageBitmap(sheet, 0, 0, r.size.sw, r.size.sh, { resizeWidth: r.size.rw, resizeHeight: r.size.rh, resizeQuality: "high" }); sheet.close(); }
           }
